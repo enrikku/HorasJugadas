@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Horas Jugadas</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⏱️</text></svg>">
+<style>
+  :root {
+    --bg: #0e1015;
+    --panel: #161922;
+    --panel-2: #1d212c;
+    --line: #272c39;
+    --text: #e8eaf0;
+    --muted: #8a90a2;
+    --accent: #f2c14e;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 960px; margin: 0 auto; padding: 24px 16px 64px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+  h1 { margin: 0; font-size: 26px; letter-spacing: -0.02em; }
+  h1 span { color: var(--accent); }
+  h2 { font-size: 16px; margin: 0 0 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+  .meta { color: var(--muted); font-size: 13px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; margin-bottom: 18px; }
+
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .tabs button {
+    background: var(--panel-2); color: var(--muted); border: 1px solid var(--line);
+    border-radius: 999px; padding: 6px 14px; font: inherit; font-size: 14px; cursor: pointer;
+  }
+  .tabs button[aria-pressed="true"] { background: var(--accent); color: #1a1405; border-color: var(--accent); font-weight: 600; }
+
+  .rank { display: grid; gap: 6px; }
+  .row {
+    position: relative; display: grid; grid-template-columns: 32px 1fr auto; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: 8px; background: var(--panel-2); cursor: pointer; overflow: hidden;
+    border: 1px solid transparent; text-align: left; color: inherit; font: inherit; width: 100%;
+  }
+  .row:hover, .row:focus-visible { border-color: var(--line); outline: none; }
+  .row .bar { position: absolute; inset: 0 auto 0 0; opacity: 0.18; pointer-events: none; }
+  .row .pos { color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; position: relative; }
+  .row .name { font-weight: 600; position: relative; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row .val { font-variant-numeric: tabular-nums; position: relative; }
+  .medal-1 .pos { color: #f2c14e; } .medal-2 .pos { color: #c0c6d4; } .medal-3 .pos { color: #d08a4e; }
+
+  .heat-wrap { overflow-x: auto; }
+  .heat { display: grid; gap: 3px; align-items: center; min-width: 560px; }
+  .heat .lbl { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 8px; }
+  .heat .cell { aspect-ratio: 1; border-radius: 3px; background: var(--panel-2); }
+  .heat .day { font-size: 10px; color: var(--muted); text-align: center; }
+
+  .detail-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .detail-head h3 { margin: 0; font-size: 22px; }
+  .close { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 8px; padding: 4px 12px; cursor: pointer; font: inherit; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin: 16px 0; }
+  .stat { background: var(--panel-2); border-radius: 8px; padding: 10px 12px; }
+  .stat b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; }
+  .stat small { color: var(--muted); }
+  .chart { display: flex; align-items: flex-end; gap: 3px; height: 160px; padding-top: 18px; border-bottom: 1px solid var(--line); }
+  .chart .b { flex: 1; border-radius: 3px 3px 0 0; min-height: 1px; position: relative; }
+  .chart .b:hover::after {
+    content: attr(data-tip); position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+    background: #000; color: #fff; font-size: 12px; padding: 3px 6px; border-radius: 4px; white-space: nowrap; margin-bottom: 4px; z-index: 2;
+  }
+  .chart-days { display: flex; gap: 3px; font-size: 10px; color: var(--muted); margin-top: 4px; }
+  .chart-days span { flex: 1; text-align: center; }
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 500; font-size: 13px; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .empty, .error { color: var(--muted); text-align: center; padding: 24px; }
+  .error { color: #ff8a8a; }
+  @media (max-width: 600px) { .chart-days span:nth-child(odd) { visibility: hidden; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>⏱️ Horas <span>Jugadas</span></h1>
+    <div class="meta" id="meta">Cargando…</div>
+  </header>
+
+  <section class="panel" id="detail" hidden></section>
+
+  <section class="panel">
+    <h2>Ranking</h2>
+    <div class="tabs" role="group" aria-label="Periodo">
+      <button data-mode="today">Hoy</button>
+      <button data-mode="week" aria-pressed="true">7 días</button>
+      <button data-mode="month">30 días</button>
+      <button data-mode="total">Total /played</button>
+    </div>
+    <div class="rank" id="rank"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Actividad · últimos 30 días</h2>
+    <div class="heat-wrap"><div class="heat" id="heat"></div></div>
+  </section>
+</main>
+
+<script src="config.js"></script>
+<script>
+"use strict";
+const CFG = window.HJ_CONFIG || {};
+const DAYS = 30;
+
+const CLASSES = {
+  DEATHKNIGHT: ["#C41E3A", "Caballero de la Muerte"], DEMONHUNTER: ["#A330C9", "Cazador de demonios"],
+  DRUID: ["#FF7C0A", "Druida"], EVOKER: ["#33937F", "Evocador"], HUNTER: ["#AAD372", "Cazador"],
+  MAGE: ["#3FC7EB", "Mago"], MONK: ["#00FF98", "Monje"], PALADIN: ["#F48CBA", "Paladín"],
+  PRIEST: ["#FFFFFF", "Sacerdote"], ROGUE: ["#FFF468", "Pícaro"], SHAMAN: ["#0070DD", "Chamán"],
+  WARLOCK: ["#8788EE", "Brujo"], WARRIOR: ["#C69B6D", "Guerrero"],
+};
+const classColor = (c) => (CLASSES[c] || ["#c9ccd6"])[0];
+const className = (c) => (CLASSES[c] || [null, c || "?"])[1];
+
+const state = { mode: "week", players: [], days: [], chars: [], selected: null };
+
+// --- utilidades -------------------------------------------------------------
+const pad = (n) => String(n).padStart(2, "0");
+function dayKey(offset = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() - offset);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+const lastDays = (n) => Array.from({ length: n }, (_, i) => dayKey(n - 1 - i)); // antiguo -> hoy
+function fmt(sec) {
+  sec = Math.round(sec || 0);
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60);
+  return h ? `${h}h ${pad(m)}m` : `${m}m`;
+}
+function el(tag, props = {}, ...children) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === "style") Object.assign(e.style, v);
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else if (k in e) e[k] = v;
+    else e.setAttribute(k, v);
+  }
+  for (const c of children) if (c != null) e.append(c);
+  return e;
+}
+function ago(iso) {
+  const min = Math.round((Date.now() - new Date(iso)) / 60000);
+  if (min < 1) return "ahora";
+  if (min < 60) return `hace ${min} min`;
+  if (min < 1440) return `hace ${Math.round(min / 60)} h`;
+  return `hace ${Math.round(min / 1440)} d`;
+}
+
+// --- datos -------------------------------------------------------------------
+async function api(path) {
+  const headers = { apikey: CFG.supabaseKey };
+  if (!String(CFG.supabaseKey).startsWith("sb_")) headers.Authorization = `Bearer ${CFG.supabaseKey}`;
+  const res = await fetch(`${CFG.supabaseUrl.replace(/\/+$/, "")}/rest/v1/${path}`, { headers });
+  if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+  return res.json();
+}
+
+async function load() {
+  if (!CFG.supabaseUrl || /TU-PROYECTO/.test(CFG.supabaseUrl)) {
+    document.getElementById("rank").replaceChildren(
+      el("div", { className: "error", textContent: "Configura web/config.js con la URL y la clave de Supabase." }));
+    document.getElementById("meta").textContent = "";
+    return;
+  }
+  try {
+    const since = dayKey(DAYS - 1);
+    const [players, days, chars] = await Promise.all([
+      api("players?select=nick,updated_at"),
+      api(`play_days?select=nick,day,seconds&day=gte.${since}`),
+      api("characters?select=nick,char_key,class,level,played_seconds,last_seen"),
+    ]);
+    Object.assign(state, { players, days, chars });
+    const latest = players.reduce((a, p) => (p.updated_at > a ? p.updated_at : a), "");
+    document.getElementById("meta").textContent =
+      `${players.length} jugadores · última subida ${latest ? ago(latest) : "—"}`;
+    render();
+  } catch (e) {
+    document.getElementById("rank").replaceChildren(
+      el("div", { className: "error", textContent: `No se pudieron cargar los datos: ${e.message}` }));
+  }
+}
+
+function buildStats() {
+  const today = dayKey(0), week = dayKey(6);
+  const map = new Map();
+  for (const p of state.players) {
+    map.set(p.nick, { nick: p.nick, updated: p.updated_at, today: 0, week: 0, month: 0, total: 0,
+      days: {}, chars: [], mainClass: null });
+  }
+  for (const d of state.days) {
+    const s = map.get(d.nick); if (!s) continue;
+    s.days[d.day] = d.seconds;
+    s.month += d.seconds;
+    if (d.day >= week) s.week += d.seconds;
+    if (d.day === today) s.today += d.seconds;
+  }
+  for (const c of state.chars) {
+    const s = map.get(c.nick); if (!s) continue;
+    s.chars.push(c);
+    s.total += Number(c.played_seconds) || 0;
+  }
+  for (const s of map.values()) {
+    s.chars.sort((a, b) => b.played_seconds - a.played_seconds);
+    s.mainClass = s.chars[0]?.class || null;
+  }
+  return map;
+}
+
+// --- render ------------------------------------------------------------------
+function render() {
+  const stats = buildStats();
+  renderRank(stats);
+  renderHeat(stats);
+  renderDetail(stats);
+}
+
+function renderRank(stats) {
+  const list = [...stats.values()].sort((a, b) => b[state.mode] - a[state.mode] || a.nick.localeCompare(b.nick));
+  const max = Math.max(1, ...list.map((s) => s[state.mode]));
+  const box = document.getElementById("rank");
+  if (!list.length) {
+    box.replaceChildren(el("div", { className: "empty", textContent: "Todavía nadie ha subido datos." }));
+    return;
+  }
+  box.replaceChildren(...list.map((s, i) => {
+    const color = classColor(s.mainClass);
+    return el("button", { className: `row medal-${i + 1}`, onclick: () => select(s.nick) },
+      el("div", { className: "bar", style: { width: `${(s[state.mode] / max) * 100}%`, background: color } }),
+      el("span", { className: "pos", textContent: `${i + 1}` }),
+      el("span", { className: "name", textContent: s.nick, style: { color } }),
+      el("span", { className: "val", textContent: fmt(s[state.mode]) }));
+  }));
+}
+
+function renderHeat(stats) {
+  const days = lastDays(DAYS);
+  const list = [...stats.values()].sort((a, b) => b.month - a.month);
+  const heat = document.getElementById("heat");
+  heat.style.gridTemplateColumns = `minmax(80px, 140px) repeat(${DAYS}, 1fr)`;
+  const cells = [el("span")];
+  days.forEach((d, i) => cells.push(el("span", { className: "day", textContent: i % 5 === 4 || i === DAYS - 1 ? d.slice(8) : "" })));
+  for (const s of list) {
+    const color = classColor(s.mainClass);
+    cells.push(el("span", { className: "lbl", textContent: s.nick, style: { color } }));
+    for (const d of days) {
+      const sec = s.days[d] || 0;
+      const a = sec ? 0.2 + 0.8 * Math.min(1, sec / (6 * 3600)) : 0; // 6 h o más = color pleno
+      cells.push(el("span", {
+        className: "cell", title: `${s.nick} · ${d.slice(8)}/${d.slice(5, 7)} · ${fmt(sec)}`,
+        style: sec ? { background: color, opacity: a } : {},
+      }));
+    }
+  }
+  heat.replaceChildren(...cells);
+}
+
+function renderDetail(stats) {
+  const box = document.getElementById("detail");
+  const s = state.selected && stats.get(state.selected);
+  if (!s) { box.hidden = true; return; }
+  box.hidden = false;
+  const color = classColor(s.mainClass);
+  const days = lastDays(DAYS);
+  const max = Math.max(1, ...days.map((d) => s.days[d] || 0));
+
+  box.replaceChildren(
+    el("div", { className: "detail-head" },
+      el("h3", { textContent: s.nick, style: { color } }),
+      el("button", { className: "close", textContent: "Cerrar", onclick: () => select(null) })),
+    el("div", { className: "stats" },
+      ...[["Hoy", s.today], ["7 días", s.week], ["30 días", s.month], ["Total /played", s.total]]
+        .map(([l, v]) => el("div", { className: "stat" }, el("b", { textContent: fmt(v) }), el("small", { textContent: l })))),
+    el("div", { className: "chart" }, ...days.map((d) => el("div", {
+      className: "b", "data-tip": `${d.slice(8)}/${d.slice(5, 7)}: ${fmt(s.days[d] || 0)}`,
+      style: { height: `${((s.days[d] || 0) / max) * 100}%`, background: color, opacity: d === dayKey(0) ? 1 : 0.7 },
+    }))),
+    el("div", { className: "chart-days" }, ...days.map((d) => el("span", { textContent: d.slice(8) }))),
+    el("table", {},
+      el("thead", {}, el("tr", {},
+        el("th", { textContent: "Personaje" }), el("th", { textContent: "Clase" }),
+        el("th", { className: "num", textContent: "Nivel" }), el("th", { className: "num", textContent: "/played" }))),
+      el("tbody", {}, ...s.chars.map((c) => el("tr", {},
+        el("td", { textContent: c.char_key, style: { color: classColor(c.class) } }),
+        el("td", { textContent: className(c.class) }),
+        el("td", { className: "num", textContent: c.level ?? "?" }),
+        el("td", { className: "num", textContent: fmt(c.played_seconds) }))))),
+    el("p", { className: "meta", textContent: `Última subida ${ago(s.updated)}` }),
+  );
+}
+
+function select(nick) {
+  state.selected = nick;
+  render();
+  if (nick) document.getElementById("detail").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+document.querySelectorAll(".tabs button").forEach((b) => b.addEventListener("click", () => {
+  state.mode = b.dataset.mode;
+  document.querySelectorAll(".tabs button").forEach((x) => x.setAttribute("aria-pressed", x === b));
+  render();
+}));
+
+load();
+setInterval(load, 120000);
+</script>
+</body>
+</html>

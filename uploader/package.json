@@ -1,0 +1,19 @@
+{
+  "name": "horasjugadas-uploader",
+  "version": "1.0.0",
+  "description": "Sube las horas registradas por el addon Horas Jugadas a Supabase",
+  "main": "horasjugadas-uploader.js",
+  "bin": "horasjugadas-uploader.js",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node horasjugadas-uploader.js",
+    "once": "node horasjugadas-uploader.js --once",
+    "dry-run": "node horasjugadas-uploader.js --dry-run",
+    "test": "node test.js",
+    "build": "node build-exe.js"
+  }
+}

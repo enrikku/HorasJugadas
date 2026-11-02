@@ -1,0 +1,11 @@
+## Interface: 120005
+## Title: Horas Jugadas
+## Notes: Registra cuántas horas juega cada uno y compártelo con tus amigos.
+## Author: Enric
+## Version: 1.0.0
+## SavedVariables: HorasJugadasDB
+## IconTexture: Interface\Icons\INV_Misc_PocketWatch_01
+
+Core.lua
+Sync.lua
+UI.lua
