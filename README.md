@@ -190,6 +190,8 @@ Solo hace falta hacerlo una vez para todo el grupo.
 
    > ⛔ **Nunca** uses la clave `secret` / `service_role`. Da control total sobre la base de datos.
 
+**Datos de demo (opcional):** para ver cómo queda la web antes de que nadie juegue, ejecuta [`supabase/demo.sql`](supabase/demo.sql) en el SQL Editor. Crea 6 jugadores ficticios, todos con apodos que terminan en ` (demo)`, con unos 45 días de actividad y varios personajes. Las fechas son relativas al día de hoy. Para quitarlos, ejecuta [`supabase/demo-borrar.sql`](supabase/demo-borrar.sql). Solo borra los apodos ` (demo)`; los jugadores reales no se tocan.
+
 ### 4.2 Configurar
 
 Pon la URL y la clave en dos archivos:
