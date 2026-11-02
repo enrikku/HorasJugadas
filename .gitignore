@@ -1,3 +1,6 @@
 node_modules/
 uploader/dist/
 uploader/config.json
+
+.vercel
+.env*
