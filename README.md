@@ -2,6 +2,8 @@
 
 Sistema para que un grupo de amigos sepa **cuántas horas juega cada uno a World of Warcraft** y lo vea en una web con rankings y gráficas.
 
+🌐 **Web:** <https://horas-jugadas.vercel.app>
+
 Tiene tres piezas que trabajan juntas:
 
 | Pieza | Qué es | Dónde se ejecuta |
@@ -227,6 +229,8 @@ npx vercel --prod
 ```
 
 La primera vez te pedirá iniciar sesión y unas preguntas: acepta los valores por defecto. Al terminar te dará la dirección de la web.
+
+> La web de este repositorio ya está publicada en el proyecto `horas-jugadas` de Vercel. La carpeta `web/.vercel/` (no se sube a git) la vincula a ese proyecto. Para publicar cambios basta con `cd web` y `npx vercel --prod`.
 
 También puedes importar el repositorio desde el panel de Vercel e indicar **Root Directory: `web`**. Así se vuelve a publicar sola con cada `git push`.
 
