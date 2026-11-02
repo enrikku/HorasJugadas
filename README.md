@@ -223,16 +223,15 @@ node build-exe.js       # genera dist\HorasJugadasUploader.exe con tu config.jso
 
 ### 4.4 Publicar la web (Vercel)
 
-```powershell
-cd web
-npx vercel --prod
-```
+1. En Vercel: **Add New → Project**, importa el repositorio de GitHub.
+2. En **Root Directory** elige **`web`**. Es importante: si se deja la raíz, la web da 404.
+3. **Deploy.**
 
-La primera vez te pedirá iniciar sesión y unas preguntas: acepta los valores por defecto. Al terminar te dará la dirección de la web.
+A partir de ahí, **cada `git push` a `main` publica la web automáticamente**.
 
-> La web de este repositorio ya está publicada en el proyecto `horas-jugadas` de Vercel. La carpeta `web/.vercel/` (no se sube a git) la vincula a ese proyecto. Para publicar cambios basta con `cd web` y `npx vercel --prod`.
+Para publicar a mano desde la raíz del repositorio: `npx vercel --prod`.
 
-También puedes importar el repositorio desde el panel de Vercel e indicar **Root Directory: `web`**. Así se vuelve a publicar sola con cada `git push`.
+> Este repositorio ya está conectado al proyecto `horas-jugadas` de Vercel, con Root Directory `web`, y se publica solo con cada push.
 
 ### 4.5 Repartir a los amigos
 
