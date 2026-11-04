@@ -2,7 +2,7 @@
 // Horas Jugadas - Uploader
 //
 // Lee el archivo SavedVariables del addon (WTF\Account\<CUENTA>\SavedVariables\HorasJugadas.lua)
-// y sube tus horas a Supabase cada vez que cambia (WoW lo escribe al salir del juego o con /reload).
+// y sube tus horas y muertes a Supabase cada vez que cambia (WoW lo escribe al salir o con /reload).
 //
 // Uso:
 //   horasjugadas-uploader                 vigila y sube automáticamente (déjalo abierto)
@@ -19,7 +19,7 @@ const os = require('node:os');
 const crypto = require('node:crypto');
 const { execFileSync } = require('node:child_process');
 
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 const POLL_MS = 30_000;
 const SV_FILE = 'HorasJugadas.lua';
 
@@ -329,6 +329,7 @@ function buildPayloads(files) {
             class: c.class || '',
             level: Number.isFinite(c.level) ? c.level : null,
             played_seconds: Math.round(c.played || 0),
+            deaths: Math.max(0, Math.round(Number(c.deaths) || 0)),
             last_seen: Math.round(c.last || 0),
         })),
     }));
@@ -383,7 +384,9 @@ async function runOnce(cfg, state, { force = false, dryRun = false } = {}) {
 
     for (const p of payloads) {
         const total = Object.values(p.p_days).reduce((a, b) => a + b, 0);
-        const summary = `${p.p_nick}: ${Object.keys(p.p_days).length} días (${hours(total)}), ${p.p_chars.length} personajes`;
+        const deaths = p.p_chars.reduce((sum, c) => sum + c.deaths, 0);
+        const summary = `${p.p_nick}: ${Object.keys(p.p_days).length} días (${hours(total)}), ` +
+            `${p.p_chars.length} personajes, ${deaths} muertes`;
         if (dryRun) {
             log('[prueba]', summary);
             console.log(JSON.stringify(p, null, 2));

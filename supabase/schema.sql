@@ -29,9 +29,13 @@ create table if not exists public.characters (
     class           text,                   -- "MAGE", "PRIEST"...
     level           integer,
     played_seconds  bigint not null default 0,
+    deaths          bigint not null default 0,
     last_seen       timestamptz,
     primary key (nick, char_key)
 );
+
+-- Migración para proyectos que ya ejecutaron una versión anterior del esquema.
+alter table public.characters add column if not exists deaths bigint not null default 0;
 
 -- Tokens (privado: sin políticas => la clave anon no puede verlo)
 create table if not exists public.player_tokens (
@@ -56,7 +60,7 @@ create policy "lectura publica" on public.characters for select to anon, authent
 -- Función de subida ------------------------------------------------------------
 -- p_days:  {"2026-11-02": 3600, "2026-11-01": 5400}
 -- p_chars: [{"char_key": "Pj-Reino", "class": "MAGE", "level": 80,
---            "played_seconds": 123456, "last_seen": 1793600000}]
+--            "played_seconds": 123456, "deaths": 42, "last_seen": 1793600000}]
 
 create or replace function public.upload_play_data(
     p_nick  text,
@@ -105,6 +109,15 @@ begin
         level          = excluded.level,
         played_seconds = excluded.played_seconds,
         last_seen      = excluded.last_seen;
+
+    -- Se actualiza aparte para que uploaders 1.0, que no mandan "deaths",
+    -- sigan siendo compatibles y no borren un valor ya conocido.
+    update characters as ch
+    set deaths = greatest(0, round((item.value ->> 'deaths')::numeric))::bigint
+    from jsonb_array_elements(coalesce(p_chars, '[]'::jsonb)) as item(value)
+    where ch.nick = p_nick
+      and ch.char_key = item.value ->> 'char_key'
+      and item.value ? 'deaths';
 
     update players set updated_at = now() where nick = p_nick;
 end;

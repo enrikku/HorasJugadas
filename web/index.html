@@ -97,6 +97,7 @@
       <button data-mode="week" aria-pressed="true">7 días</button>
       <button data-mode="month">30 días</button>
       <button data-mode="total">Total /played</button>
+      <button data-mode="deaths">Muertes</button>
     </div>
     <div class="rank" id="rank"></div>
   </section>
@@ -138,6 +139,9 @@ function fmt(sec) {
   const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60);
   return h ? `${h}h ${pad(m)}m` : `${m}m`;
 }
+function fmtValue(mode, value) {
+  return mode === "deaths" ? Math.round(value || 0).toLocaleString("es-ES") : fmt(value);
+}
 function el(tag, props = {}, ...children) {
   const e = document.createElement(tag);
   for (const [k, v] of Object.entries(props)) {
@@ -178,7 +182,7 @@ async function load() {
     const [players, days, chars] = await Promise.all([
       api("players?select=nick,updated_at"),
       api(`play_days?select=nick,day,seconds&day=gte.${since}`),
-      api("characters?select=nick,char_key,class,level,played_seconds,last_seen"),
+      api("characters?select=nick,char_key,class,level,played_seconds,deaths,last_seen"),
     ]);
     Object.assign(state, { players, days, chars });
     const latest = players.reduce((a, p) => (p.updated_at > a ? p.updated_at : a), "");
@@ -195,7 +199,7 @@ function buildStats() {
   const today = dayKey(0), week = dayKey(6);
   const map = new Map();
   for (const p of state.players) {
-    map.set(p.nick, { nick: p.nick, updated: p.updated_at, today: 0, week: 0, month: 0, total: 0,
+    map.set(p.nick, { nick: p.nick, updated: p.updated_at, today: 0, week: 0, month: 0, total: 0, deaths: 0,
       days: {}, chars: [], mainClass: null });
   }
   for (const d of state.days) {
@@ -209,6 +213,7 @@ function buildStats() {
     const s = map.get(c.nick); if (!s) continue;
     s.chars.push(c);
     s.total += Number(c.played_seconds) || 0;
+    s.deaths += Number(c.deaths) || 0;
   }
   for (const s of map.values()) {
     s.chars.sort((a, b) => b.played_seconds - a.played_seconds);
@@ -239,7 +244,7 @@ function renderRank(stats) {
       el("div", { className: "bar", style: { width: `${(s[state.mode] / max) * 100}%`, background: color } }),
       el("span", { className: "pos", textContent: `${i + 1}` }),
       el("span", { className: "name", textContent: s.nick, style: { color } }),
-      el("span", { className: "val", textContent: fmt(s[state.mode]) }));
+      el("span", { className: "val", textContent: fmtValue(state.mode, s[state.mode]) }));
   }));
 }
 
@@ -279,8 +284,9 @@ function renderDetail(stats) {
       el("h3", { textContent: s.nick, style: { color } }),
       el("button", { className: "close", textContent: "Cerrar", onclick: () => select(null) })),
     el("div", { className: "stats" },
-      ...[["Hoy", s.today], ["7 días", s.week], ["30 días", s.month], ["Total /played", s.total]]
-        .map(([l, v]) => el("div", { className: "stat" }, el("b", { textContent: fmt(v) }), el("small", { textContent: l })))),
+      ...[["Hoy", "today"], ["7 días", "week"], ["30 días", "month"], ["Total /played", "total"], ["Muertes", "deaths"]]
+        .map(([l, key]) => el("div", { className: "stat" },
+          el("b", { textContent: fmtValue(key, s[key]) }), el("small", { textContent: l })))),
     el("div", { className: "chart" }, ...days.map((d) => el("div", {
       className: "b", "data-tip": `${d.slice(8)}/${d.slice(5, 7)}: ${fmt(s.days[d] || 0)}`,
       style: { height: `${((s.days[d] || 0) / max) * 100}%`, background: color, opacity: d === dayKey(0) ? 1 : 0.7 },
@@ -289,12 +295,14 @@ function renderDetail(stats) {
     el("table", {},
       el("thead", {}, el("tr", {},
         el("th", { textContent: "Personaje" }), el("th", { textContent: "Clase" }),
-        el("th", { className: "num", textContent: "Nivel" }), el("th", { className: "num", textContent: "/played" }))),
+        el("th", { className: "num", textContent: "Nivel" }), el("th", { className: "num", textContent: "/played" }),
+        el("th", { className: "num", textContent: "Muertes" }))),
       el("tbody", {}, ...s.chars.map((c) => el("tr", {},
         el("td", { textContent: c.char_key, style: { color: classColor(c.class) } }),
         el("td", { textContent: className(c.class) }),
         el("td", { className: "num", textContent: c.level ?? "?" }),
-        el("td", { className: "num", textContent: fmt(c.played_seconds) }))))),
+        el("td", { className: "num", textContent: fmt(c.played_seconds) }),
+        el("td", { className: "num", textContent: Math.round(Number(c.deaths) || 0).toLocaleString("es-ES") }))))),
     el("p", { className: "meta", textContent: `Última subida ${ago(s.updated)}` }),
   );
 }

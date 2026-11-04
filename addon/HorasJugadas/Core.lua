@@ -7,9 +7,10 @@ local HJ = CreateFrame("Frame")
 ns.HJ = HJ
 HorasJugadas = HJ
 
-HJ.VERSION = (C_AddOns and C_AddOns.GetAddOnMetadata(ADDON_NAME, "Version")) or "1.0.0"
+HJ.VERSION = (C_AddOns and C_AddOns.GetAddOnMetadata(ADDON_NAME, "Version")) or "1.1.0"
 HJ.TICK_SECONDS = 60     -- cada cuánto se suma tiempo
 HJ.KEEP_DAYS = 120       -- días de historial que se guardan
+HJ.DEATH_STAT_ID = 60    -- estadística de WoW: "Total deaths"
 
 local floor, max = math.floor, math.max
 
@@ -38,6 +39,11 @@ function HJ:FormatTime(sec)
     local m = floor((sec % 3600) / 60)
     if h == 0 then return format("%dm", m) end
     return format("%dh %02dm", h, m)
+end
+
+function HJ:FormatStat(mode, value)
+    if mode == "deaths" then return tostring(floor(value or 0)) end
+    return self:FormatTime(value)
 end
 
 function HJ:CharKey()
@@ -102,9 +108,10 @@ function HJ:GetMyChar()
     local key = self:CharKey()
     local c = me.chars[key]
     if not c then
-        c = { played = 0 }
+        c = { played = 0, deaths = 0 }
         me.chars[key] = c
     end
+    c.deaths = c.deaths or 0
     return c
 end
 
@@ -144,11 +151,12 @@ end
 ---------------------------------------------------------------------------
 function HJ:Stats(p, keys)
     keys = keys or self:LastDays(30)
-    local s = { total = 0, today = 0, week = 0, month = 0, chars = 0 }
+    local s = { total = 0, today = 0, week = 0, month = 0, deaths = 0, chars = 0 }
     local best = -1
     for _, c in pairs(p.chars) do
         local played = c.played or 0
         s.total = s.total + played
+        s.deaths = s.deaths + (c.deaths or 0)
         s.chars = s.chars + 1
         if played > best then best, s.mainClass = played, c.class end
     end
@@ -193,11 +201,12 @@ function HJ:ExportCSV()
     end
     lines[#lines + 1] = ""
     lines[#lines + 1] = "# Personajes"
-    lines[#lines + 1] = "jugador,personaje,clase,nivel,played_segundos,played_horas"
+    lines[#lines + 1] = "jugador,personaje,clase,nivel,played_segundos,played_horas,muertes"
     for _, nick in ipairs(nicks) do
         for key, c in pairs(self.db.players[nick].chars) do
             local s = floor(c.played or 0)
-            lines[#lines + 1] = format("%s,%s,%s,%d,%d,%.2f", nick, key, c.class or "", c.level or 0, s, s / 3600)
+            lines[#lines + 1] = format("%s,%s,%s,%d,%d,%.2f,%d", nick, key, c.class or "", c.level or 0,
+                s, s / 3600, floor(c.deaths or 0))
         end
     end
     return table.concat(lines, "\n")
@@ -225,6 +234,36 @@ function HJ:Tick()
     if self.UI then self.UI:Refresh() end
 end
 
+-- Recupera el histórico que WoW ya conoce para el personaje actual. La API
+-- devuelve texto localizado y, bajo restricciones de addons, puede ser secreto.
+function HJ:RefreshLifetimeDeaths()
+    if not self.db or not GetStatistic then return end
+    local value = GetStatistic(self.DEATH_STAT_ID)
+    if value == nil or (issecretvalue and issecretvalue(value)) then return end
+
+    local digits = tostring(value):gsub("[^%d]", "")
+    local total = tonumber(digits)
+    if not total then return end
+
+    local c = self:GetMyChar()
+    if total > (c.deaths or 0) then
+        c.deaths = total
+        c.last = time()
+        self:GetMe().updated = time()
+        if self.UI then self.UI:Refresh() end
+    end
+end
+
+function HJ:RecordDeath()
+    if self.deathCounted then return end
+    self.deathCounted = true
+    local c = self:GetMyChar()
+    c.deaths = (c.deaths or 0) + 1
+    c.last = time()
+    self:GetMe().updated = time()
+    if self.UI then self.UI:Refresh() end
+end
+
 ---------------------------------------------------------------------------
 -- Eventos
 ---------------------------------------------------------------------------
@@ -232,6 +271,9 @@ HJ:RegisterEvent("PLAYER_LOGIN")
 HJ:RegisterEvent("PLAYER_LOGOUT")
 HJ:RegisterEvent("TIME_PLAYED_MSG")
 HJ:RegisterEvent("PLAYER_LEVEL_UP")
+HJ:RegisterEvent("PLAYER_DEAD")
+HJ:RegisterEvent("PLAYER_ALIVE")
+HJ:RegisterEvent("PLAYER_UNGHOST")
 
 HJ:SetScript("OnEvent", function(self, event, ...)
     if event == "PLAYER_LOGIN" then
@@ -239,9 +281,15 @@ HJ:SetScript("OnEvent", function(self, event, ...)
         self:UpdateCharInfo()
         self:Prune()
         self.lastTick = GetTime()
+        -- Evita contar de nuevo una muerte si se carga o recarga estando muerto.
+        self.deathCounted = UnitIsDeadOrGhost("player")
         C_Timer.NewTicker(self.TICK_SECONDS, function() self:Tick() end)
         -- /played real del personaje (sobrescribe la estimación)
         C_Timer.After(5, function() RequestTimePlayed() end)
+        -- Histórico de muertes del personaje; el segundo intento cubre datos de
+        -- estadísticas que todavía no estuvieran disponibles al entrar.
+        C_Timer.After(6, function() self:RefreshLifetimeDeaths() end)
+        C_Timer.After(20, function() self:RefreshLifetimeDeaths() end)
         if self.InitSync then self:InitSync() end
         if self.UI then self.UI:Init() end
         self:Print("cargado. Apodo: |cffffff00" .. self.db.nick .. "|r  ·  /hj para abrir")
@@ -261,6 +309,16 @@ HJ:SetScript("OnEvent", function(self, event, ...)
     elseif event == "PLAYER_LEVEL_UP" then
         local level = ...
         if self.db then self:GetMyChar().level = level end
+
+    elseif event == "PLAYER_DEAD" then
+        if self.db then self:RecordDeath() end
+
+    elseif event == "PLAYER_ALIVE" or event == "PLAYER_UNGHOST" then
+        -- PLAYER_ALIVE también se dispara al liberar espíritu; solo se permite
+        -- otra cuenta cuando el personaje ya no está muerto ni es fantasma.
+        if self.db and not UnitIsDeadOrGhost("player") then
+            self.deathCounted = false
+        end
 
     elseif self.OnSyncEvent then
         self:OnSyncEvent(event, ...)
