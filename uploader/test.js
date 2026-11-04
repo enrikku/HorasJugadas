@@ -1,7 +1,10 @@
 // Pruebas del parser de SavedVariables:  node test.js
 'use strict';
 const assert = require('node:assert/strict');
-const { parseSavedVariables } = require('./horasjugadas-uploader.js');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const { parseSavedVariables, buildPayloads } = require('./horasjugadas-uploader.js');
 
 const utf8 = (s) => Buffer.from(s, 'utf8');
 
@@ -27,5 +30,16 @@ assert.equal(r.A, 1);
 
 // Archivo a medio escribir => error (el uploader reintenta)
 assert.throws(() => parseSavedVariables(utf8('DB = { ["a"] = ')));
+
+// La estadística de muertes viaja desde cada personaje hasta el payload.
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'horasjugadas-'));
+try {
+    const file = path.join(tmp, 'HorasJugadas.lua');
+    fs.writeFileSync(file, 'HorasJugadasDB = { nick = "Ana", players = { ["Ana"] = { days = {}, chars = { ["Luna-Reino"] = { played = 7200, deaths = 7, class = "MAGE", level = 80, last = 123 } } } } }');
+    const payload = buildPayloads([file])[0];
+    assert.equal(payload.p_chars[0].deaths, 7);
+} finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+}
 
 console.log('OK: todas las pruebas pasan');

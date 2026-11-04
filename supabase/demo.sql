@@ -61,23 +61,23 @@ where d.hace < p.desde
 on conflict (nick, day) do nothing;
 
 -- Personajes -------------------------------------------------------------------
-insert into public.characters (nick, char_key, class, level, played_seconds, last_seen) values
-    ('Ana (demo)',   'Lunaria-Sanguino',     'PRIEST',      80, 3600 * 1840, now() - interval '20 minutes'),
-    ('Ana (demo)',   'Kragnor-Sanguino',     'WARRIOR',     80, 3600 * 960,  now() - interval '2 days'),
-    ('Ana (demo)',   'Chispita-Tyrande',     'MAGE',        74, 3600 * 210,  now() - interval '6 days'),
-    ('Bruno (demo)', 'Garrafón-Dun Modr',    'HUNTER',      80, 3600 * 1120, now() - interval '2 hours'),
-    ('Bruno (demo)', 'Zarpazo-Dun Modr',     'DRUID',       80, 3600 * 430,  now() - interval '9 days'),
-    ('Carla (demo)', 'Sombraluz-Minahonda',  'PALADIN',     80, 3600 * 1390, now() - interval '1 day'),
-    ('Carla (demo)', 'Escamita-Minahonda',   'EVOKER',      80, 3600 * 520,  now() - interval '3 days'),
-    ('Carla (demo)', 'Pocapena-Exodar',      'ROGUE',       58, 3600 * 95,   now() - interval '20 days'),
-    ('Carla (demo)', 'Tótem-Exodar',         'SHAMAN',      35, 3600 * 41,   now() - interval '30 days'),
-    ('Dani (demo)',  'Mortaja-Uldum',        'DEATHKNIGHT', 80, 3600 * 2210, now() - interval '3 hours'),
-    ('Dani (demo)',  'Ojovil-Uldum',         'DEMONHUNTER', 80, 3600 * 610,  now() - interval '4 days'),
-    ('Elena (demo)', 'Fëlicia-Los Errantes', 'WARLOCK',     80, 3600 * 2650, now() - interval '8 days'),
-    ('Elena (demo)', 'Bambú-Los Errantes',   'MONK',        80, 3600 * 780,  now() - interval '12 days'),
-    ('Fer (demo)',   'Novato-Sanguino',      'PALADIN',     47, 3600 * 38,   now() - interval '40 minutes'),
-    ('Fer (demo)',   'Flechita-Sanguino',    'HUNTER',      21, 3600 * 9,    now() - interval '3 days')
-on conflict (nick, char_key) do nothing;
+insert into public.characters (nick, char_key, class, level, played_seconds, deaths, last_seen) values
+    ('Ana (demo)',   'Lunaria-Sanguino',     'PRIEST',      80, 3600 * 1840, 412, now() - interval '20 minutes'),
+    ('Ana (demo)',   'Kragnor-Sanguino',     'WARRIOR',     80, 3600 * 960,  287, now() - interval '2 days'),
+    ('Ana (demo)',   'Chispita-Tyrande',     'MAGE',        74, 3600 * 210,   93, now() - interval '6 days'),
+    ('Bruno (demo)', 'Garrafón-Dun Modr',    'HUNTER',      80, 3600 * 1120, 518, now() - interval '2 hours'),
+    ('Bruno (demo)', 'Zarpazo-Dun Modr',     'DRUID',       80, 3600 * 430,  176, now() - interval '9 days'),
+    ('Carla (demo)', 'Sombraluz-Minahonda',  'PALADIN',     80, 3600 * 1390, 305, now() - interval '1 day'),
+    ('Carla (demo)', 'Escamita-Minahonda',   'EVOKER',      80, 3600 * 520,  142, now() - interval '3 days'),
+    ('Carla (demo)', 'Pocapena-Exodar',      'ROGUE',       58, 3600 * 95,    61, now() - interval '20 days'),
+    ('Carla (demo)', 'Tótem-Exodar',         'SHAMAN',      35, 3600 * 41,    27, now() - interval '30 days'),
+    ('Dani (demo)',  'Mortaja-Uldum',        'DEATHKNIGHT', 80, 3600 * 2210, 864, now() - interval '3 hours'),
+    ('Dani (demo)',  'Ojovil-Uldum',         'DEMONHUNTER', 80, 3600 * 610,  329, now() - interval '4 days'),
+    ('Elena (demo)', 'Fëlicia-Los Errantes', 'WARLOCK',     80, 3600 * 2650, 731, now() - interval '8 days'),
+    ('Elena (demo)', 'Bambú-Los Errantes',   'MONK',        80, 3600 * 780,  248, now() - interval '12 days'),
+    ('Fer (demo)',   'Novato-Sanguino',      'PALADIN',     47, 3600 * 38,    19, now() - interval '40 minutes'),
+    ('Fer (demo)',   'Flechita-Sanguino',    'HUNTER',      21, 3600 * 9,      6, now() - interval '3 days')
+on conflict (nick, char_key) do update set deaths = excluded.deaths;
 
 commit;
 
@@ -85,7 +85,8 @@ commit;
 select p.nick,
        count(distinct d.day)                    as dias_jugados,
        round(sum(d.seconds) / 3600.0, 1)        as horas_45_dias,
-       (select count(*) from public.characters c where c.nick = p.nick) as personajes
+       (select count(*) from public.characters c where c.nick = p.nick) as personajes,
+       (select sum(c.deaths) from public.characters c where c.nick = p.nick) as muertes
 from public.players p
 left join public.play_days d on d.nick = p.nick
 where p.nick like '% (demo)'

@@ -17,6 +17,7 @@ local MODES = {
     { key = "week",  label = "7 días" },
     { key = "month", label = "30 días" },
     { key = "total", label = "Total /played" },
+    { key = "deaths", label = "Muertes" },
 }
 
 local BACKDROP = {
@@ -73,10 +74,12 @@ function UI:Create()
     f.list = list
 
     list.modeButtons = {}
+    local modeGap = 6
+    local modeWidth = (INNER_W - (#MODES - 1) * modeGap) / #MODES
     for i, m in ipairs(MODES) do
         local b = CreateFrame("Button", nil, list, "UIPanelButtonTemplate")
-        b:SetSize(118, 22)
-        b:SetPoint("TOPLEFT", (i - 1) * 126, 0)
+        b:SetSize(modeWidth, 22)
+        b:SetPoint("TOPLEFT", (i - 1) * (modeWidth + modeGap), 0)
         b:SetText(m.label)
         b:SetScript("OnClick", function()
             UI.mode = m.key
@@ -275,7 +278,7 @@ function UI:Refresh()
             r.rank:SetText(tostring(idx) .. ".")
             r.name:SetText(e.nick .. (e.isMe and " |cff888888(tú)|r" or ""))
             r.name:SetTextColor(cr, cg, cb)
-            r.value:SetText(HJ:FormatTime(e.value))
+            r.value:SetText(HJ:FormatStat(self.mode, e.value))
             r.bar:SetColorTexture(cr, cg, cb, 0.25)
             r.bar:SetWidth(math.max(1, maxV > 0 and (e.value / maxV) * INNER_W or 0))
             r:Show()
@@ -298,8 +301,8 @@ function UI:RefreshDetail()
     d.name:SetTextColor(cr, cg, cb)
     d.forget:SetShown(nick ~= HJ.db.nick)
     d.summary:SetText(format(
-        "Total /played: |cffffffff%s|r  ·  %d personaje(s)\nHoy: |cffffffff%s|r  ·  7 días: |cffffffff%s|r  ·  30 días: |cffffffff%s|r",
-        HJ:FormatTime(s.total), s.chars, HJ:FormatTime(s.today), HJ:FormatTime(s.week), HJ:FormatTime(s.month)))
+        "Total /played: |cffffffff%s|r  ·  Muertes: |cffffffff%d|r  ·  %d personaje(s)\nHoy: |cffffffff%s|r  ·  7 días: |cffffffff%s|r  ·  30 días: |cffffffff%s|r",
+        HJ:FormatTime(s.total), s.deaths, s.chars, HJ:FormatTime(s.today), HJ:FormatTime(s.week), HJ:FormatTime(s.month)))
 
     -- Gráfico (de más antiguo a hoy)
     local values, maxV = {}, 0
@@ -329,8 +332,8 @@ function UI:RefreshDetail()
             break
         end
         local _, _, _, colorStr = ClassColor(e.c.class)
-        lines[#lines + 1] = format("|c%s%s|r  |cff888888nv %s|r   %s",
-            colorStr, e.key, e.c.level or "?", HJ:FormatTime(e.c.played))
+        lines[#lines + 1] = format("|c%s%s|r  |cff888888nv %s|r   %s  ·  %d muertes",
+            colorStr, e.key, e.c.level or "?", HJ:FormatTime(e.c.played), math.floor(e.c.deaths or 0))
     end
     d.chars:SetText(#lines > 0 and table.concat(lines, "\n") or "|cff888888Sin personajes todavía.|r")
 end

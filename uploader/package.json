@@ -1,7 +1,7 @@
 {
   "name": "horasjugadas-uploader",
-  "version": "1.0.0",
-  "description": "Sube las horas registradas por el addon Horas Jugadas a Supabase",
+  "version": "1.1.0",
+  "description": "Sube las horas y muertes registradas por el addon Horas Jugadas a Supabase",
   "main": "horasjugadas-uploader.js",
   "bin": "horasjugadas-uploader.js",
   "private": true,

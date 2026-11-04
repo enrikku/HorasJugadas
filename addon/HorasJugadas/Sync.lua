@@ -6,7 +6,7 @@
 --   * Susurro a un personaje concreto (/hj sync Pj-Reino).
 --
 -- Mensajes (separados por ';'):
---   C;apodo;Pj-Reino;played;CLASE;nivel;ultimaVez   -> un personaje
+--   C;apodo;Pj-Reino;played;CLASE;nivel;ultimaVez;muertes -> un personaje
 --   D;apodo;20261102=3600,20261101=5400,...          -> segundos por día (últimos 30 días)
 --   R;apodo                                          -> "envíame tus datos"
 
@@ -70,6 +70,7 @@ function HJ:BuildMessages()
     for key, c in pairs(me.chars) do
         msgs[#msgs + 1] = table.concat({
             "C", nick, key, math.floor(c.played or 0), c.class or "", c.level or 0, c.last or 0,
+            math.floor(c.deaths or 0),
         }, ";")
     end
 
@@ -163,11 +164,15 @@ function HJ:HandleMessage(text, reply)
         local key, played = f[3], tonumber(f[4])
         if key and key ~= "" and played then
             local p = self:GetPlayer(nick, true)
+            local previous = p.chars[key]
             p.chars[key] = {
                 played = played,
                 class = (f[5] ~= "" and f[5]) or nil,
                 level = tonumber(f[6]),
                 last = tonumber(f[7]),
+                -- Los clientes 1.0 no envían este campo; conservar el dato que
+                -- ya hubiera en lugar de borrarlo mantiene compatibilidad.
+                deaths = tonumber(f[8]) or (previous and previous.deaths) or 0,
             }
             p.updated = time()
             RefreshSoon()

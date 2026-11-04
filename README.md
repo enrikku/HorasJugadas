@@ -1,6 +1,6 @@
 # ⏱️ Horas Jugadas
 
-Sistema para que un grupo de amigos sepa **cuántas horas juega cada uno a World of Warcraft** y lo vea en una web con rankings y gráficas.
+Sistema para que un grupo de amigos sepa **cuántas horas juega y cuántas veces ha muerto cada uno en World of Warcraft** y lo vea en una web con rankings y gráficas.
 
 🌐 **Web:** <https://horas-jugadas.vercel.app>
 
@@ -8,8 +8,8 @@ Tiene tres piezas que trabajan juntas:
 
 | Pieza | Qué es | Dónde se ejecuta |
 |---|---|---|
-| **Addon** | Registra tu tiempo de juego dentro de WoW | En el juego, en el PC de cada amigo |
-| **Uploader** | Programa que sube tus horas a internet | En el PC de cada amigo, en segundo plano |
+| **Addon** | Registra tu tiempo de juego y tus muertes dentro de WoW | En el juego, en el PC de cada amigo |
+| **Uploader** | Programa que sube tus horas y muertes a internet | En el PC de cada amigo, en segundo plano |
 | **Web** | Página con el ranking y las gráficas de todos | En internet (Vercel) + base de datos (Supabase) |
 
 ---
@@ -42,7 +42,7 @@ Un programa externo lee ese archivo y lo sube a internet. Así funcionan tambié
  PC de cada amigo                                          Internet
 ┌───────────────────────────────────────────┐
 │  World of Warcraft + addon HorasJugadas   │
-│    • cada minuto suma tiempo al día de hoy│
+│    • suma tiempo y registra cada muerte   │
 │    • guarda el /played de cada personaje  │
 │               │                           │
 │               │ al salir del juego,       │
@@ -64,7 +64,7 @@ Un programa externo lee ese archivo y lo sube a internet. Así funcionan tambié
 
 ### Paso a paso
 
-1. **Juegas.** El addon suma 60 segundos al día de hoy cada minuto, en el personaje con el que estés. Al entrar, también pide al juego el `/played` real del personaje.
+1. **Juegas.** El addon suma 60 segundos al día de hoy cada minuto y registra las muertes del personaje. Al entrar, también pide al juego el `/played` real y su estadística histórica de muertes.
 2. **Sales del juego.** También vale cambiar de personaje o escribir `/reload`. En ese momento WoW escribe los datos del addon en el archivo `HorasJugadas.lua`.
 3. **El uploader detecta el cambio.** Revisa el archivo cada 30 segundos. Si ha cambiado, lo lee y sube **tus** datos a Supabase.
 4. **La web se actualiza.** Lee los datos de Supabase cuando la abres y cada 2 minutos mientras la tienes abierta.
@@ -127,7 +127,7 @@ Usa un nombre que tus amigos reconozcan. Ese nombre es el que aparecerá en la w
 
 Escribe `/hj`, o pulsa el **reloj del minimapa**, para abrir la ventana:
 
-- **Ranking** de hoy, 7 días, 30 días y `/played` total.
+- **Ranking** de hoy, 7 días, 30 días, `/played` total y muertes totales.
 - Al hacer **clic en un jugador**: un gráfico de sus últimos 14 días y sus personajes.
 - **Sincronizar:** intercambia datos con amigos conectados en ese momento.
 - **Exportar:** muestra todos los datos en CSV para copiarlos a Excel o Google Sheets.
@@ -148,9 +148,9 @@ Dentro del juego, el addon intercambia datos con tus amigos de **Battle.net** qu
 
 ### En la web
 
-- **Ranking:** cambia entre *Hoy*, *7 días*, *30 días* y *Total /played*.
+- **Ranking:** cambia entre *Hoy*, *7 días*, *30 días*, *Total /played* y *Muertes*.
 - **Actividad de los últimos 30 días:** cuanto más intenso el color, más horas jugó ese día. El color es el de la clase de su personaje principal. Pasa el ratón por encima para ver las horas exactas.
-- **Detalle:** al pulsar un jugador ves sus totales, un gráfico diario de 30 días y todos sus personajes con clase, nivel y `/played`.
+- **Detalle:** al pulsar un jugador ves sus totales, un gráfico diario de 30 días y todos sus personajes con clase, nivel, `/played` y muertes.
 
 ### El uploader
 
@@ -300,6 +300,11 @@ HorasJugadas/
 - Al salir (`PLAYER_LOGOUT`) suma los segundos que faltan.
 - El historial diario se conserva durante 120 días.
 
+**Registro de muertes:**
+- Al entrar, lee la estadística histórica `Total deaths` que WoW conserva para el personaje.
+- Mientras juegas, el evento `PLAYER_DEAD` incrementa el contador inmediatamente.
+- El total de una persona es la suma de las muertes de todos sus personajes conocidos.
+
 **Datos guardados** (`HorasJugadasDB`, uno por cuenta de WoW):
 
 ```lua
@@ -308,7 +313,7 @@ HorasJugadasDB = {
   players = {
     ["Enric"] = {                       -- tus datos
       chars = {
-        ["Thrall-Sanguino"] = { played = 1234567, class = "SHAMAN", level = 80, last = 1793612345 },
+        ["Thrall-Sanguino"] = { played = 1234567, deaths = 42, class = "SHAMAN", level = 80, last = 1793612345 },
       },
       days = { ["2026-11-02"] = 3600, ["2026-11-01"] = 5400 },
       updated = 1793612345,
@@ -323,7 +328,7 @@ HorasJugadasDB = {
 
 | Mensaje | Significado |
 |---|---|
-| `C;apodo;Pj-Reino;played;CLASE;nivel;ts` | Datos de un personaje |
+| `C;apodo;Pj-Reino;played;CLASE;nivel;ts;muertes` | Datos de un personaje |
 | `D;apodo;20261102=3600,20261101=5400,...` | Segundos por día de los últimos 30 días, en trozos de 250 caracteres como máximo |
 | `R;apodo` | "Envíame tus datos" (se responde una vez por minuto como máximo a cada jugador) |
 
@@ -347,7 +352,7 @@ Las variables de entorno `HJ_SUPABASE_URL`, `HJ_SUPABASE_KEY` y `HJ_WOW_PATH` su
 |---|---|---|
 | `players` | `nick`, `created_at`, `updated_at` | ✅ |
 | `play_days` | `nick`, `day`, `seconds` (máximo 86 400 por día) | ✅ |
-| `characters` | `nick`, `char_key`, `class`, `level`, `played_seconds`, `last_seen` | ✅ |
+| `characters` | `nick`, `char_key`, `class`, `level`, `played_seconds`, `deaths`, `last_seen` | ✅ |
 | `player_tokens` | `nick`, `token_hash` (SHA-256) | ❌ privada |
 
 Nadie puede escribir directamente en las tablas. Todo pasa por la función `upload_play_data(p_nick, p_token, p_days, p_chars)`:
@@ -361,7 +366,7 @@ Nadie puede escribir directamente en las tablas. Todo pasa por la función `uplo
 Es una página estática sin frameworks ni dependencias. Consulta la API REST de Supabase con la clave pública:
 - `players`;
 - `play_days` de los últimos 30 días;
-- `characters`.
+- `characters`, incluyendo el total histórico de muertes de cada personaje.
 
 Calcula los rankings en el navegador y se actualiza cada 2 minutos.
 
@@ -369,7 +374,7 @@ Calcula los rankings en el navegador y se actualiza cada 2 minutos.
 
 ## 6. Seguridad y privacidad
 
-- **Qué se sube:** tu apodo, segundos jugados por día, y nombre, reino, clase, nivel y `/played` de tus personajes. **Nada más:** ni nombre de cuenta, ni email, ni nada del PC.
+- **Qué se sube:** tu apodo, segundos jugados por día, y nombre, reino, clase, nivel, `/played` y muertes de tus personajes. **Nada más:** ni nombre de cuenta, ni email, ni nada del PC.
 - **Quién puede verlo:** cualquiera que tenga la dirección de la web. Los datos son de lectura pública.
 - **La clave de `config.js` y `config.json` es pública a propósito.** Solo permite leer y llamar a la función de subida. No da acceso de administrador.
 - **Tu token** (`%APPDATA%\HorasJugadas\estado.json`) es lo que demuestra que un apodo es tuyo. Se genera la primera vez, es aleatorio (256 bits) y en la base de datos solo se guarda su hash.
@@ -427,6 +432,8 @@ Después de cambiar el Lua, escribe `/reload` en el juego. Si cambias el `.toc` 
 - **No es en tiempo real:** los datos se suben al salir del juego o hacer `/reload`.
 - **Cuenta el tiempo AFK**, igual que `/played`.
 - **Solo se registran los días desde que instalas el addon.** El `/played` de cada personaje sí incluye todo su historial.
+- **Las muertes sí incluyen el historial anterior a la instalación** siempre que WoW devuelva la estadística `Total deaths` para ese personaje. Se actualiza cuando entras con él.
+- Tras instalar esta versión, hay que **entrar una vez con cada personaje** para importar sus muertes históricas; hasta entonces ese personaje contará como cero.
 - **Si el juego se cierra de golpe** (por un crash o al matar el proceso), WoW no guarda el archivo y se pierde esa sesión en el historial diario. El `/played` se recupera en la siguiente entrada.
 - **Los días se calculan con la hora local** de cada jugador.
 - **Solo Windows** para el `.exe`. En Mac se puede ejecutar el uploader con Node: `node horasjugadas-uploader.js`.
