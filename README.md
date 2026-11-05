@@ -79,7 +79,7 @@ Las horas se agrupan por **persona**: todos tus personajes, de cualquier reino, 
 
 ## 2. Instalación para jugadores
 
-Necesitas el zip que te pase el administrador. Contiene la carpeta del addon, el programa `HorasJugadasUploader.exe` y su `config.json`.
+Necesitas el zip que te pase el administrador. Contiene la carpeta del addon, el programa `HorasJugadasUploader.exe` y su `config.json`. Si juegas en Linux, también lleva el script `horasjugadas-uploader.js`; sigue los mismos pasos, salvo el 2, que tiene [su propia versión](#paso-2-en-linux).
 
 ### Paso 1: Instalar el addon
 
@@ -104,6 +104,27 @@ Necesitas el zip que te pase el administrador. Contiene la carpeta del addon, el
    HorasJugadasUploader.exe --instalar-inicio
    ```
    Para hacerlo al momento sin reiniciar, ejecuta `HorasJugadasUploader.exe` una vez más.
+
+### Paso 2 en Linux
+
+El `.exe` no sirve en Linux, pero el script hace lo mismo con [Node.js](https://nodejs.org) 20 o superior (compruébalo con `node --version`).
+
+1. Copia `horasjugadas-uploader.js` y `config.json` en una carpeta fija, por ejemplo `~/HorasJugadas/`. **Mantenlos juntos** y no los muevas después de instalar el paso 3.
+2. Entra en el juego con el addon, sal, y comprueba qué subiría:
+   ```bash
+   cd ~/HorasJugadas
+   node horasjugadas-uploader.js --dry-run
+   ```
+   Debe mostrar la carpeta de WoW y tus datos. Se detectan solos los prefijos de Wine en `~/.wine`, Lutris (`~/Games/*`), Bottles y Steam/Proton, incluidas las bibliotecas de Steam en otros discos.
+   Si sale `No encuentro World of Warcraft`, busca la carpeta y ponla en `"wowPath"` de `config.json`, con la ruta completa y sin `_retail_` ni `_forever_` al final:
+   ```bash
+   find ~ -type f -name HorasJugadas.lua -path '*SavedVariables*' 2>/dev/null
+   ```
+3. Para que arranque solo y oculto al iniciar sesión (necesita systemd), ejecuta:
+   ```bash
+   node horasjugadas-uploader.js --instalar-inicio
+   ```
+   Queda en marcha desde ese momento. Para ver qué hace: `journalctl --user -u horasjugadas -f`.
 
 ### Paso 3: Ponerte tu apodo
 
@@ -160,11 +181,11 @@ Dentro del juego, el addon intercambia datos con tus amigos de **Battle.net** qu
 | `--once` | Sube una vez y se cierra |
 | `--dry-run` | Muestra lo que subiría, **sin subir nada** |
 | `--force` | Sube aunque no haya cambios |
-| `--instalar-inicio` | Arranca oculto al encender Windows |
-| `--quitar-inicio` | Deja de arrancar con Windows |
+| `--instalar-inicio` | Arranca oculto al encender Windows o al iniciar sesión en Linux |
+| `--quitar-inicio` | Deja de arrancar solo |
 | `--ayuda` | Ayuda y rutas de sus archivos |
 
-El uploader guarda sus archivos en `%APPDATA%\HorasJugadas\`:
+El uploader guarda sus archivos en `%APPDATA%\HorasJugadas\` (en Linux, `~/.config/HorasJugadas/`):
 - `estado.json`: tu **token personal** y la última subida. **No lo compartas ni lo borres.**
 - `uploader.log`: registro de lo que ha hecho. Míralo si algo falla.
 
@@ -220,7 +241,7 @@ window.HJ_CONFIG = {
 ```powershell
 cd uploader
 node test.js            # comprueba que el lector del archivo funciona
-node build-exe.js       # genera dist\HorasJugadasUploader.exe con tu config.json
+node build-exe.js       # genera dist\HorasJugadasUploader.exe con tu config.json y copia el script para Linux
 ```
 
 ### 4.4 Publicar la web (Vercel)
@@ -244,6 +265,7 @@ HorasJugadas.zip
 ├── HorasJugadas\            ← copia de addon\HorasJugadas
 └── Uploader\
     ├── HorasJugadasUploader.exe
+    ├── horasjugadas-uploader.js   ← para quien juega en Linux
     └── config.json
 ```
 
@@ -337,7 +359,10 @@ HorasJugadasDB = {
 1. Busca WoW, en este orden:
    - `wowPath` de `config.json`;
    - el registro de Windows (`HKLM\SOFTWARE\WOW6432Node\Blizzard Entertainment\World of Warcraft`);
-   - rutas habituales de las unidades C: a H:.
+   - rutas habituales de las unidades C: a H:;
+   - en Linux, rutas habituales dentro de los prefijos de Wine de `~/.wine`, Lutris, Bottles y Steam/Proton.
+
+   Si hay varias instalaciones, usa la primera que tenga datos del addon.
 2. Busca `WTF\Account\*\SavedVariables\HorasJugadas.lua`. Puede haber varias cuentas de WoW.
 3. Lee el archivo con un **lector propio de Lua**, porque el formato de SavedVariables es un trozo de código Lua.
 4. Se queda solo con `players[nick]`, es decir, **tus** datos, nunca los recibidos de otros. Si tienes varias cuentas de WoW con el mismo apodo, suma sus días.
@@ -386,7 +411,7 @@ Calcula los rankings en el navegador y se actualiza cada 2 minutos.
 
 | Problema | Solución |
 |---|---|
-| **"No encuentro World of Warcraft"** | Abre `config.json` junto al `.exe` y pon la carpeta de WoW con barras dobles: `"wowPath": "D:\\Juegos\\World of Warcraft"` |
+| **"No encuentro World of Warcraft"** | Abre `config.json` junto al `.exe` y pon la carpeta de WoW con barras dobles: `"wowPath": "D:\\Juegos\\World of Warcraft"`. En Linux, usa la ruta completa con barras normales ([Paso 2 en Linux](#paso-2-en-linux)). |
 | **"No hay datos todavía"** | Entra al juego con el addon activado y luego **sal del juego** o haz `/reload`. WoW solo escribe el archivo en ese momento. |
 | **Mis horas no aparecen en la web** | ¿Has salido del juego o hecho `/reload`? ¿Está el uploader abierto? Mira `%APPDATA%\HorasJugadas\uploader.log`. Puedes forzar la subida con `HorasJugadasUploader.exe --once --force`. |
 | **"El apodo X ya pertenece a otra persona"** | Ese apodo ya lo reservó otro PC. Elige otro con `/hj nombre`. Si es tuyo y reinstalaste Windows, pide al administrador que lo libere ([4.6](#46-tareas-de-mantenimiento)). |
@@ -436,5 +461,5 @@ Después de cambiar el Lua, escribe `/reload` en el juego. Si cambias el `.toc` 
 - Tras instalar esta versión, hay que **entrar una vez con cada personaje** para importar sus muertes históricas; hasta entonces ese personaje contará como cero.
 - **Si el juego se cierra de golpe** (por un crash o al matar el proceso), WoW no guarda el archivo y se pierde esa sesión en el historial diario. El `/played` se recupera en la siguiente entrada.
 - **Los días se calculan con la hora local** de cada jugador.
-- **Solo Windows** para el `.exe`. En Mac se puede ejecutar el uploader con Node: `node horasjugadas-uploader.js`.
+- **Solo Windows** para el `.exe`. En Linux y Mac se ejecuta el uploader con Node: `node horasjugadas-uploader.js`. El arranque automático no está disponible en Mac, ni en Linux sin systemd.
 - Dentro de **encuentros de banda o partidas competitivas**, el juego puede bloquear los mensajes entre addons. Se reintentan más tarde. A la web no le afecta.

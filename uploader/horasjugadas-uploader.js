@@ -9,8 +9,8 @@
 //   horasjugadas-uploader --once          sube una vez y termina
 //   horasjugadas-uploader --dry-run       muestra lo que subiría, sin subir nada
 //   horasjugadas-uploader --force         sube aunque no haya cambios
-//   horasjugadas-uploader --instalar-inicio   arrancar oculto al iniciar Windows
-//   horasjugadas-uploader --quitar-inicio     quitar del inicio de Windows
+//   horasjugadas-uploader --instalar-inicio   arrancar oculto al iniciar Windows o la sesión de Linux
+//   horasjugadas-uploader --quitar-inicio     quitar del inicio
 'use strict';
 
 const fs = require('node:fs');
@@ -19,7 +19,7 @@ const os = require('node:os');
 const crypto = require('node:crypto');
 const { execFileSync } = require('node:child_process');
 
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 const POLL_MS = 30_000;
 const SV_FILE = 'HorasJugadas.lua';
 
@@ -258,6 +258,48 @@ function registryInstallPath() {
     return found;
 }
 
+// Carpetas habituales de WoW dentro de un disco de Windows o de un prefijo de Wine.
+const WOW_DIRS = ['Program Files (x86)/World of Warcraft', 'Program Files/World of Warcraft',
+    'World of Warcraft', 'Games/World of Warcraft', 'Juegos/World of Warcraft',
+    'Battle.net/World of Warcraft', 'Blizzard/World of Warcraft'];
+
+function subdirs(dir) {
+    try {
+        return fs.readdirSync(dir, { withFileTypes: true })
+            .filter((e) => e.isDirectory() || e.isSymbolicLink())
+            .map((e) => path.join(dir, e.name));
+    } catch {
+        return [];
+    }
+}
+
+// Bibliotecas de Steam: la principal y las de otros discos que indica libraryfolders.vdf.
+function steamLibraries(home) {
+    const libs = [path.join(home, '.local', 'share', 'Steam'), path.join(home, '.steam', 'steam'),
+        path.join(home, '.var', 'app', 'com.valvesoftware.Steam', '.local', 'share', 'Steam')];
+    for (const root of libs.slice()) {
+        try {
+            const vdf = fs.readFileSync(path.join(root, 'steamapps', 'libraryfolders.vdf'), 'utf8');
+            for (const m of vdf.matchAll(/"path"\s+"([^"]+)"/g)) libs.push(m[1]);
+        } catch { /* Steam no instalado aquí */ }
+    }
+    return libs;
+}
+
+// En Linux WoW corre dentro de un prefijo de Wine (Lutris, Bottles, Steam/Proton o Wine a secas).
+function linuxWowRoots(home = os.homedir()) {
+    const prefixes = [
+        path.join(home, '.wine'),
+        ...subdirs(path.join(home, 'Games')),
+        ...subdirs(path.join(home, '.local', 'share', 'bottles', 'bottles')),
+        ...subdirs(path.join(home, '.var', 'app', 'com.usebottles.bottles', 'data', 'bottles', 'bottles')),
+        ...steamLibraries(home).flatMap((lib) => subdirs(path.join(lib, 'steamapps', 'compatdata'))
+            .map((game) => path.join(game, 'pfx'))),
+    ];
+    const roots = prefixes.flatMap((p) => WOW_DIRS.map((d) => path.join(p, 'drive_c', d)));
+    return [...new Set(roots)];
+}
+
 function wowCandidates(cfg) {
     const list = [];
     // WoW Forever se instala en su propia carpeta, junto a _retail_.
@@ -265,23 +307,29 @@ function wowCandidates(cfg) {
     if (cfg.wowPath) add(cfg.wowPath);
     registryInstallPath().forEach(add);
     if (process.platform === 'win32') {
-        const dirs = ['Program Files (x86)\\World of Warcraft', 'Program Files\\World of Warcraft',
-            'World of Warcraft', 'Games\\World of Warcraft', 'Juegos\\World of Warcraft',
-            'Battle.net\\World of Warcraft', 'Blizzard\\World of Warcraft'];
         for (const d of 'CDEFGH') {
-            for (const p of dirs) list.push(`${d}:\\${p}\\_retail_`, `${d}:\\${p}\\_forever_`);
+            for (const p of WOW_DIRS) {
+                list.push(path.join(`${d}:\\`, p, '_retail_'), path.join(`${d}:\\`, p, '_forever_'));
+            }
         }
     } else if (process.platform === 'darwin') {
         list.push('/Applications/World of Warcraft/_retail_', '/Applications/World of Warcraft/_forever_');
+    } else if (process.platform === 'linux') {
+        linuxWowRoots().forEach(add);
     }
     return list;
 }
 
+// Prefiere la carpeta que ya tiene datos del addon: puede haber varias instalaciones
+// (_retail_ y _forever_, o varios prefijos de Wine) y solo una usar el addon.
 function findRetail(cfg) {
+    let fallback = null;
     for (const c of wowCandidates(cfg)) {
-        if (fs.existsSync(path.join(c, 'WTF', 'Account'))) return c;
+        if (!fs.existsSync(path.join(c, 'WTF', 'Account'))) continue;
+        if (findSavedVariables(c).length > 0) return c;
+        fallback ??= c;
     }
-    return null;
+    return fallback;
 }
 
 function findSavedVariables(retail) {
@@ -369,9 +417,12 @@ async function runOnce(cfg, state, { force = false, dryRun = false } = {}) {
     const retail = findRetail(cfg);
     if (!retail) {
         log('No encuentro World of Warcraft. Pon la ruta en config.json, por ejemplo:',
-            '"wowPath": "D:\\\\Juegos\\\\World of Warcraft"');
+            process.platform === 'win32'
+                ? '"wowPath": "D:\\\\Juegos\\\\World of Warcraft"'
+                : '"wowPath": "/home/tu-usuario/Games/battlenet/drive_c/Program Files (x86)/World of Warcraft"');
         return false;
     }
+    if (dryRun) log('Carpeta de WoW:', retail);
     const files = findSavedVariables(retail);
     if (files.length === 0) {
         log(`No hay datos todavía en ${retail}. Entra al juego con el addon y sal (o haz /reload).`);
@@ -438,24 +489,90 @@ async function watch(cfg, state) {
 }
 
 // ---------------------------------------------------------------------------
-// Inicio automático con Windows
+// Inicio automático (Windows: carpeta de inicio; Linux: servicio de usuario de systemd)
 // ---------------------------------------------------------------------------
+function startupCommand() {
+    return isSea() ? [process.execPath] : [process.execPath, __filename];
+}
+
 function startupFile() {
     return path.join(process.env.APPDATA || '', 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup',
         'HorasJugadasUploader.vbs');
 }
 
-function installStartup() {
-    if (process.platform !== 'win32') throw new Error('Solo disponible en Windows.');
-    const cmd = isSea() ? `"${process.execPath}"` : `"${process.execPath}" "${__filename}"`;
+function installStartupWindows() {
+    const cmd = startupCommand().map((a) => `"${a}"`).join(' ');
     const vbs = `CreateObject("WScript.Shell").Run "${cmd.replace(/"/g, '""')}", 0, False\r\n`;
     fs.writeFileSync(startupFile(), vbs);
     log('Instalado: se iniciará oculto con Windows. Log en', LOG_FILE);
 }
 
-function removeStartup() {
+function removeStartupWindows() {
     if (fs.existsSync(startupFile())) fs.unlinkSync(startupFile());
     log('Quitado del inicio de Windows.');
+}
+
+function systemdFile() {
+    const configDir = process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config');
+    return path.join(configDir, 'systemd', 'user', 'horasjugadas.service');
+}
+
+// En un unit de systemd, además de las comillas, % y $ tienen significado especial.
+function systemdUnit(command) {
+    const quote = (arg) => `"${arg.replace(/[\\"]/g, '\\$&').replace(/%/g, '%%').replace(/\$/g, () => '$$')}"`;
+    return `[Unit]
+Description=Horas Jugadas uploader
+
+[Service]
+ExecStart=${command.map(quote).join(' ')}
+Restart=on-failure
+RestartSec=60
+
+[Install]
+WantedBy=default.target
+`;
+}
+
+function systemctl(...args) {
+    execFileSync('systemctl', ['--user', ...args], { stdio: ['ignore', 'ignore', 'pipe'] });
+}
+
+function installStartupLinux() {
+    const file = systemdFile();
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, systemdUnit(startupCommand()));
+    try {
+        systemctl('daemon-reload');
+        systemctl('enable', 'horasjugadas.service');
+        systemctl('restart', 'horasjugadas.service'); // por si ya corría una instalación anterior
+    } catch (e) {
+        fs.rmSync(file, { force: true });
+        throw new Error('No se pudo instalar el servicio con systemctl --user: ' +
+            `${String(e.stderr || e.message).trim()}. Sin systemd, añade el uploader al inicio de sesión de tu escritorio.`);
+    }
+    log('Instalado: ya está en marcha y se iniciará oculto al iniciar sesión. Log en', LOG_FILE);
+}
+
+function removeStartupLinux() {
+    const file = systemdFile();
+    if (fs.existsSync(file)) {
+        try { systemctl('disable', '--now', 'horasjugadas.service'); } catch { /* ya estaba parado */ }
+        fs.rmSync(file);
+        try { systemctl('daemon-reload'); } catch { /* sin systemd no hay nada que recargar */ }
+    }
+    log('Quitado del inicio de sesión.');
+}
+
+function installStartup() {
+    if (process.platform === 'win32') return installStartupWindows();
+    if (process.platform === 'linux') return installStartupLinux();
+    throw new Error('Solo disponible en Windows y Linux.');
+}
+
+function removeStartup() {
+    if (process.platform === 'win32') return removeStartupWindows();
+    if (process.platform === 'linux') return removeStartupLinux();
+    throw new Error('Solo disponible en Windows y Linux.');
 }
 
 // ---------------------------------------------------------------------------
@@ -468,8 +585,8 @@ async function main() {
   --once               sube una vez y termina
   --dry-run            muestra lo que subiría, sin subir nada
   --force              sube aunque no haya cambios
-  --instalar-inicio    arrancar oculto al iniciar Windows
-  --quitar-inicio      quitar del inicio de Windows
+  --instalar-inicio    arrancar oculto al iniciar Windows o la sesión de Linux
+  --quitar-inicio      quitar del inicio
 
 Config:  ${path.join(BASE_DIR, 'config.json')}
 Estado:  ${STATE_FILE}
@@ -499,4 +616,4 @@ if (require.main === module || isSea()) {
     });
 }
 
-module.exports = { parseSavedVariables, buildPayloads };
+module.exports = { parseSavedVariables, buildPayloads, findRetail, linuxWowRoots, systemdUnit };

@@ -39,5 +39,8 @@ fs.rmSync(seaConfig);
 const cfg = path.join(dir, 'config.json');
 fs.copyFileSync(fs.existsSync(cfg) ? cfg : path.join(dir, 'config.example.json'), path.join(dist, 'config.json'));
 
+// Para quien juega en Linux: el .exe no le sirve, usa el script con Node.
+fs.copyFileSync(path.join(dir, 'horasjugadas-uploader.js'), path.join(dist, 'horasjugadas-uploader.js'));
+
 console.log(`\nListo: ${exe}`);
-console.log('Reparte la carpeta dist/ (el .exe y config.json juntos).');
+console.log('Reparte la carpeta dist/ entera (.exe, script para Linux y config.json).');

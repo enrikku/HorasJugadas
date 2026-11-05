@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { parseSavedVariables, buildPayloads } = require('./horasjugadas-uploader.js');
+const { parseSavedVariables, buildPayloads, findRetail, linuxWowRoots, systemdUnit } = require('./horasjugadas-uploader.js');
 
 const utf8 = (s) => Buffer.from(s, 'utf8');
 
@@ -43,8 +43,40 @@ try {
     fs.writeFileSync(file, 'HorasJugadasDB = { nick = "Ana", players = { ["Ana"] = { days = {}, chars = { ["Luna-ReinoDos"] = { played = 7200, class = "MAGE", level = 80, last = 123 }, ["Luna-Reino Dos"] = { played = 56, last = 124 } } } } }');
     const deduped = buildPayloads([file])[0];
     assert.deepEqual(deduped.p_chars.map((c) => c.char_key), ['Luna-ReinoDos']);
+
+    // Rutas de WoW en Linux: Lutris, Bottles, Steam/Proton y bibliotecas de Steam en otros discos.
+    const home = path.join(tmp, 'home');
+    const otherLib = path.join(tmp, 'otro-disco');
+    const steam = path.join(home, '.local', 'share', 'Steam', 'steamapps');
+    fs.mkdirSync(path.join(home, 'Games', 'battlenet'), { recursive: true });
+    fs.mkdirSync(path.join(home, '.local', 'share', 'bottles', 'bottles', 'wow'), { recursive: true });
+    fs.mkdirSync(path.join(steam, 'compatdata', '111'), { recursive: true });
+    fs.mkdirSync(path.join(otherLib, 'steamapps', 'compatdata', '222'), { recursive: true });
+    fs.writeFileSync(path.join(steam, 'libraryfolders.vdf'), `"libraryfolders" { "1" { "path"\t\t"${otherLib}" } }`);
+    const roots = linuxWowRoots(home);
+    const pf = path.join('drive_c', 'Program Files (x86)', 'World of Warcraft');
+    for (const expected of [
+        path.join(home, '.wine', pf),
+        path.join(home, 'Games', 'battlenet', pf),
+        path.join(home, '.local', 'share', 'bottles', 'bottles', 'wow', pf),
+        path.join(steam, 'compatdata', '111', 'pfx', pf),
+        path.join(otherLib, 'steamapps', 'compatdata', '222', 'pfx', pf),
+    ]) assert.ok(roots.includes(expected), `falta ${expected}`);
+
+    // Con varias instalaciones gana la que tiene datos del addon, aunque vaya después.
+    const wow = path.join(tmp, 'wow');
+    fs.mkdirSync(path.join(wow, '_retail_', 'WTF', 'Account', 'A', 'SavedVariables'), { recursive: true });
+    assert.equal(findRetail({ wowPath: wow }), path.join(wow, '_retail_'));
+    const sv = path.join(wow, '_forever_', 'WTF', 'Account', 'A', 'SavedVariables');
+    fs.mkdirSync(sv, { recursive: true });
+    fs.writeFileSync(path.join(sv, 'HorasJugadas.lua'), 'HorasJugadasDB = {}');
+    assert.equal(findRetail({ wowPath: wow }), path.join(wow, '_forever_'));
 } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
 }
+
+// El servicio de systemd admite rutas con espacios y caracteres especiales.
+assert.match(systemdUnit(['/usr/bin/node', '/home/a b/100%/$x.js']),
+    /^ExecStart="\/usr\/bin\/node" "\/home\/a b\/100%%\/\$\$x\.js"$/m);
 
 console.log('OK: todas las pruebas pasan');
