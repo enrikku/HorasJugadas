@@ -4,88 +4,197 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Horas Jugadas</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⏱️</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='46' fill='%2318140e' stroke='%23c9a227' stroke-width='8'/><path fill='%23ffd100' d='M36 28h28v6c0 8-9 11-11 16 2 5 11 8 11 16v6H36v-6c0-8 9-11 11-16-2-5-11-8-11-16z'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700&family=Cinzel:wght@600;700&display=swap">
 <style>
   :root {
-    --bg: #0e1015;
-    --panel: #161922;
-    --panel-2: #1d212c;
-    --line: #272c39;
-    --text: #e8eaf0;
-    --muted: #8a90a2;
-    --accent: #f2c14e;
-    --radius: 12px;
+    color-scheme: dark;
+    --bg: #0a0907;
+    --panel: #18140e;
+    --inset: #0c0a07;
+    --stone-hi: #8f897c;
+    --stone: #57524a;
+    --stone-lo: #2b2822;
+    --line: #2f2a21;
+    --text: #f3ecd9;
+    --muted: #aea48d;
+    --gold: #ffd100;
+    --gold-dim: #c9a227;
+    --title-font: "Cinzel", Georgia, "Times New Roman", serif;
+    --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    background: var(--bg);
+    background: var(--noise), radial-gradient(ellipse 1100px 600px at 50% 0, #2a2118, transparent) no-repeat, var(--bg);
     color: var(--text);
-    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font: 16px/1.5 "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+    font-variant-numeric: lining-nums;
   }
   main { max-width: 960px; margin: 0 auto; padding: 24px 16px 64px; }
-  header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
-  h1 { margin: 0; font-size: 26px; letter-spacing: -0.02em; }
-  h1 span { color: var(--accent); }
-  h2 { font-size: 16px; margin: 0 0 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
-  .meta { color: var(--muted); font-size: 13px; }
-  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; margin-bottom: 18px; }
 
-  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  /* Cabecera ---------------------------------------------------------------- */
+  header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 42px; }
+  .crest { width: 60px; height: 60px; flex: none; filter: drop-shadow(0 2px 4px #000); }
+  .title { flex: 1 1 240px; }
+  h1 {
+    margin: 0; font: 700 30px/1.15 var(--title-font); color: var(--gold);
+    text-shadow: 0 1px 0 #6b5200, 0 2px 4px #000;
+  }
+  .meta { color: var(--muted); font-size: 14px; }
+
+  /* Ventanas: marco de piedra biselado con remaches en las esquinas --------- */
+  .panel {
+    position: relative; padding: 26px 18px 18px; margin-bottom: 44px;
+    background: var(--noise), linear-gradient(#211b13, var(--panel) 140px);
+    border: 4px solid; border-color: var(--stone-hi) var(--stone-lo) var(--stone-lo) var(--stone);
+    border-radius: 7px;
+    box-shadow: 0 0 0 1px #000, inset 0 0 0 1px #000, inset 0 0 28px rgba(0, 0, 0, .55), 0 10px 26px rgba(0, 0, 0, .65);
+  }
+  .panel::before {
+    content: ""; position: absolute; inset: -7px; pointer-events: none;
+    --rivet: radial-gradient(circle at 40% 35%, #e9d48a 0, #a5832a 45%, #3d2f0c 75%, transparent 78%);
+    background: var(--rivet) 0 0, var(--rivet) 100% 0, var(--rivet) 0 100%, var(--rivet) 100% 100%;
+    background-size: 13px 13px; background-repeat: no-repeat;
+  }
+  /* Placa del título, montada sobre el borde superior */
+  h2 {
+    position: relative; width: fit-content; max-width: 100%; margin: -46px auto 18px; padding: 5px 26px;
+    font: 600 15px/1.3 var(--title-font); color: var(--gold); text-align: center; letter-spacing: .04em;
+    background: linear-gradient(#3b342a, #1c1812);
+    border: 2px solid; border-color: #d9b73f #7a5f15 #6b5212 #a98a26; border-radius: 4px;
+    box-shadow: 0 0 0 1px #000, 0 3px 6px rgba(0, 0, 0, .7);
+    text-shadow: 0 1px 2px #000;
+  }
+
+  /* Pestañas ---------------------------------------------------------------- */
+  .tabs { display: flex; gap: 3px; flex-wrap: wrap; padding: 0 6px; margin-bottom: 12px; border-bottom: 2px solid var(--stone); }
   .tabs button {
-    background: var(--panel-2); color: var(--muted); border: 1px solid var(--line);
-    border-radius: 999px; padding: 6px 14px; font: inherit; font-size: 14px; cursor: pointer;
+    margin-bottom: -2px; padding: 7px 14px 6px; cursor: pointer;
+    font: 500 15px/1.2 "Alegreya Sans", "Segoe UI", sans-serif; color: var(--gold-dim);
+    background: linear-gradient(#2a241b, #14110c);
+    border: 2px solid var(--stone-lo); border-bottom-color: var(--stone); border-radius: 7px 7px 0 0;
   }
-  .tabs button[aria-pressed="true"] { background: var(--accent); color: #1a1405; border-color: var(--accent); font-weight: 600; }
+  .tabs button:hover { color: var(--gold); border-top-color: var(--stone); }
+  .tabs button[aria-pressed="true"] {
+    color: var(--gold); font-weight: 700; background: linear-gradient(#4a3f2b, #1d1810);
+    border-color: var(--stone-hi) var(--stone) #1d1810;
+  }
+  button:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
 
-  .rank { display: grid; gap: 6px; }
+  /* Ranking: barras de estado ------------------------------------------------ */
+  .rank { display: grid; gap: 4px; }
   .row {
-    position: relative; display: grid; grid-template-columns: 32px 1fr auto; align-items: center; gap: 10px;
-    padding: 10px 12px; border-radius: 8px; background: var(--panel-2); cursor: pointer; overflow: hidden;
-    border: 1px solid transparent; text-align: left; color: inherit; font: inherit; width: 100%;
+    position: relative; display: grid; grid-template-columns: 30px 1fr auto; align-items: center; gap: 10px;
+    width: 100%; min-height: 40px; padding: 6px 12px 6px 8px; overflow: hidden; cursor: pointer;
+    font: inherit; color: inherit; text-align: left;
+    background: var(--inset); border: 1px solid #000; border-radius: 3px;
+    box-shadow: inset 0 1px 3px #000, 0 1px 0 rgba(255, 255, 255, .06);
   }
-  .row:hover, .row:focus-visible { border-color: var(--line); outline: none; }
-  .row .bar { position: absolute; inset: 0 auto 0 0; opacity: 0.18; pointer-events: none; }
-  .row .pos { color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; position: relative; }
-  .row .name { font-weight: 600; position: relative; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .row .val { font-variant-numeric: tabular-nums; position: relative; }
-  .medal-1 .pos { color: #f2c14e; } .medal-2 .pos { color: #c0c6d4; } .medal-3 .pos { color: #d08a4e; }
+  .row:hover { border-color: var(--gold-dim); }
+  .row:focus-visible { outline: 2px solid var(--gold); outline-offset: -1px; }
+  .row .bar { position: absolute; inset: 0 auto 0 0; opacity: .26; pointer-events: none; box-shadow: inset 0 8px 8px -6px rgba(255, 255, 255, .7), inset 0 -8px 8px -6px #000; }
+  .row .pos {
+    position: relative; justify-self: center; width: 24px; height: 24px; display: grid; place-items: center;
+    font-size: 14px; font-weight: 700; font-variant-numeric: lining-nums tabular-nums; color: var(--muted); text-shadow: 0 1px 2px #000;
+  }
+  .row .name { position: relative; font-size: 17px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-shadow: -1px 0 #000, 1px 0 #000, 0 -1px #000, 0 1px #000, 0 2px 3px #000; }
+  .row .val { position: relative; font-weight: 500; font-variant-numeric: lining-nums tabular-nums; text-shadow: 0 1px 2px #000; }
+  /* Podio en monedas de oro, plata y cobre */
+  .medal-1 .pos, .medal-2 .pos, .medal-3 .pos { border-radius: 50%; color: #1c1405; text-shadow: 0 1px 0 rgba(255, 255, 255, .35); box-shadow: 0 0 0 1px #000, inset 0 -2px 3px rgba(0, 0, 0, .4); }
+  .medal-1 .pos { background: radial-gradient(circle at 35% 30%, #fff1a8, #e8b923 55%, #93700f); }
+  .medal-2 .pos { background: radial-gradient(circle at 35% 30%, #ffffff, #bfc4cc 55%, #6f747c); }
+  .medal-3 .pos { background: radial-gradient(circle at 35% 30%, #f6c49a, #c47a3f 55%, #6f3f18); }
 
+  /* Actividad: rejilla de casillas de bolsa ---------------------------------- */
   .heat-wrap { overflow-x: auto; }
-  .heat { display: grid; gap: 3px; align-items: center; min-width: 560px; }
-  .heat .lbl { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 8px; }
-  .heat .cell { aspect-ratio: 1; border-radius: 3px; background: var(--panel-2); }
-  .heat .day { font-size: 10px; color: var(--muted); text-align: center; }
-
-  .detail-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
-  .detail-head h3 { margin: 0; font-size: 22px; }
-  .close { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 8px; padding: 4px 12px; cursor: pointer; font: inherit; }
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin: 16px 0; }
-  .stat { background: var(--panel-2); border-radius: 8px; padding: 10px 12px; }
-  .stat b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; }
-  .stat small { color: var(--muted); }
-  .chart { display: flex; align-items: flex-end; gap: 3px; height: 160px; padding-top: 18px; border-bottom: 1px solid var(--line); }
-  .chart .b { flex: 1; border-radius: 3px 3px 0 0; min-height: 1px; position: relative; }
-  .chart .b:hover::after {
-    content: attr(data-tip); position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
-    background: #000; color: #fff; font-size: 12px; padding: 3px 6px; border-radius: 4px; white-space: nowrap; margin-bottom: 4px; z-index: 2;
+  .heat { display: grid; gap: 3px; align-items: center; min-width: 620px; }
+  .heat .lbl { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 8px; text-shadow: 0 1px 2px #000; }
+  .heat .cell {
+    display: block; aspect-ratio: 1; padding: 1px; border-radius: 2px; background: #050403;
+    border: 1px solid; border-color: #000 #3b362c #3b362c #000;
   }
-  .chart-days { display: flex; gap: 3px; font-size: 10px; color: var(--muted); margin-top: 4px; }
-  .chart-days span { flex: 1; text-align: center; }
-  table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
-  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); }
-  th { color: var(--muted); font-weight: 500; font-size: 13px; }
-  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .heat .cell i { display: block; width: 100%; height: 100%; border-radius: 1px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35); }
+  .heat .cell:hover { border-color: var(--gold); }
+  .heat .day { font-size: 12px; color: var(--muted); text-align: center; }
+
+  /* Ficha de jugador --------------------------------------------------------- */
+  .detail-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .detail-head h3 { margin: 0; font: 700 24px/1.2 var(--title-font); text-shadow: 0 1px 3px #000; }
+  .close {
+    padding: 5px 18px; cursor: pointer; font: 700 14px/1.3 "Alegreya Sans", "Segoe UI", sans-serif; color: var(--gold);
+    background: linear-gradient(#a81a14, #5e0d09); border: 2px solid; border-color: #d9b73f #6b5212 #6b5212 #a98a26; border-radius: 4px;
+    box-shadow: 0 0 0 1px #000, inset 0 1px 0 rgba(255, 255, 255, .25); text-shadow: 0 1px 1px #000;
+  }
+  .close:hover { background: linear-gradient(#c8231b, #731009); }
+  .close:active { background: linear-gradient(#5e0d09, #8a140e); }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin: 16px 0 22px; }
+  .stat {
+    display: flex; flex-direction: column-reverse; padding: 8px 12px; background: var(--inset);
+    border: 1px solid; border-color: #000 #3b362c #3b362c #000; border-radius: 3px;
+  }
+  .stat b { font-size: 21px; line-height: 1.2; font-variant-numeric: lining-nums tabular-nums; }
+  .stat small { color: var(--gold); font-size: 14px; }
+  .chart {
+    display: flex; align-items: flex-end; gap: 3px; height: 170px; padding: 18px 4px 0;
+    background: repeating-linear-gradient(to top, transparent 0 37px, rgba(255, 255, 255, .05) 37px 38px), var(--inset);
+    border: 1px solid; border-color: #000 #3b362c #3b362c #000; border-radius: 3px;
+  }
+  .chart .b { flex: 1; border-radius: 2px 2px 0 0; min-height: 1px; box-shadow: inset 1px 1px 0 rgba(255, 255, 255, .3), inset -1px 0 0 rgba(0, 0, 0, .4); }
+  .chart .b:hover { filter: brightness(1.3); }
+  .chart-days { display: flex; gap: 3px; padding: 0 4px; font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .chart-days span { flex: 1 1 0; min-width: 0; text-align: center; }
+  .table-wrap { overflow-x: auto; margin-top: 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { color: var(--gold); font-weight: 700; font-size: 14px; border-bottom-color: var(--stone); }
+  td:first-child { font-weight: 700; text-shadow: 0 1px 2px #000; }
+  tbody tr:hover { background: rgba(255, 209, 0, .06); }
+  td.num, th.num { text-align: right; font-variant-numeric: lining-nums tabular-nums; }
+  .panel > .meta { margin: 14px 0 0; }
   .empty, .error { color: var(--muted); text-align: center; padding: 24px; }
-  .error { color: #ff8a8a; }
-  @media (max-width: 600px) { .chart-days span:nth-child(odd) { visibility: hidden; } }
+  .error { color: #ff6a5e; }
+
+  /* Tooltip del juego: azul noche con borde gris azulado --------------------- */
+  .tip {
+    position: fixed; z-index: 10; max-width: 260px; padding: 6px 10px; pointer-events: none;
+    background: rgba(6, 9, 28, .94); border: 2px solid #8d93a8; border-radius: 5px;
+    box-shadow: 0 0 0 1px #000, 0 4px 10px rgba(0, 0, 0, .7); font-size: 14px; line-height: 1.35;
+  }
+  .tip[hidden] { display: none; }
+  .tip b { display: block; font-size: 15px; color: #fff; }
+  .tip span { color: var(--gold); }
+
+  @media (max-width: 600px) {
+    h1 { font-size: 26px; }
+    .chart-days span { overflow: visible; white-space: nowrap; }
+    .chart-days span:not(:nth-child(5n)) { visibility: hidden; }
+    /* En móvil las pestañas ocupan dos filas: mejor como botones independientes */
+    .tabs { padding: 0; border-bottom: 0; }
+    .tabs button { flex: 1 1 auto; margin: 0; border-radius: 4px; border-bottom-color: var(--stone-lo); }
+    .tabs button[aria-pressed="true"] { border-color: var(--gold-dim); }
+    .panel { padding: 24px 12px 14px; }
+  }
 </style>
 </head>
 <body>
 <main>
   <header>
-    <h1>⏱️ Horas <span>Jugadas</span></h1>
-    <div class="meta" id="meta">Cargando…</div>
+    <svg class="crest" viewBox="0 0 100 100" aria-hidden="true">
+      <defs>
+        <linearGradient id="ring" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4dc85"/><stop offset=".5" stop-color="#b8901f"/><stop offset="1" stop-color="#5a430c"/></linearGradient>
+        <radialGradient id="well" cx=".5" cy=".35" r=".7"><stop offset="0" stop-color="#3a2a14"/><stop offset="1" stop-color="#0c0a07"/></radialGradient>
+      </defs>
+      <circle cx="50" cy="50" r="47" fill="#000"/>
+      <circle cx="50" cy="50" r="42" fill="url(#well)" stroke="url(#ring)" stroke-width="8"/>
+      <path fill="url(#ring)" d="M36 28h28v6c0 8-9 11-11 16 2 5 11 8 11 16v6H36v-6c0-8 9-11 11-16-2-5-11-8-11-16z"/>
+    </svg>
+    <div class="title">
+      <h1>Horas Jugadas</h1>
+      <div class="meta" id="meta">Cargando…</div>
+    </div>
   </header>
 
   <section class="panel" id="detail" hidden></section>
@@ -262,9 +371,8 @@ function renderHeat(stats) {
       const sec = s.days[d] || 0;
       const a = sec ? 0.2 + 0.8 * Math.min(1, sec / (6 * 3600)) : 0; // 6 h o más = color pleno
       cells.push(el("span", {
-        className: "cell", title: `${s.nick} · ${d.slice(8)}/${d.slice(5, 7)} · ${fmt(sec)}`,
-        style: sec ? { background: color, opacity: a } : {},
-      }));
+        className: "cell", "data-tip-title": s.nick, "data-tip": `${d.slice(8)}/${d.slice(5, 7)} · ${fmt(sec)}`,
+      }, sec ? el("i", { style: { background: color, opacity: a } }) : null));
     }
   }
   heat.replaceChildren(...cells);
@@ -288,11 +396,11 @@ function renderDetail(stats) {
         .map(([l, key]) => el("div", { className: "stat" },
           el("b", { textContent: fmtValue(key, s[key]) }), el("small", { textContent: l })))),
     el("div", { className: "chart" }, ...days.map((d) => el("div", {
-      className: "b", "data-tip": `${d.slice(8)}/${d.slice(5, 7)}: ${fmt(s.days[d] || 0)}`,
+      className: "b", "data-tip-title": `${d.slice(8)}/${d.slice(5, 7)}`, "data-tip": fmt(s.days[d] || 0),
       style: { height: `${((s.days[d] || 0) / max) * 100}%`, background: color, opacity: d === dayKey(0) ? 1 : 0.7 },
     }))),
     el("div", { className: "chart-days" }, ...days.map((d) => el("span", { textContent: d.slice(8) }))),
-    el("table", {},
+    el("div", { className: "table-wrap" }, el("table", {},
       el("thead", {}, el("tr", {},
         el("th", { textContent: "Personaje" }), el("th", { textContent: "Clase" }),
         el("th", { className: "num", textContent: "Nivel" }), el("th", { className: "num", textContent: "/played" }),
@@ -302,7 +410,7 @@ function renderDetail(stats) {
         el("td", { textContent: className(c.class) }),
         el("td", { className: "num", textContent: c.level ?? "?" }),
         el("td", { className: "num", textContent: fmt(c.played_seconds) }),
-        el("td", { className: "num", textContent: Math.round(Number(c.deaths) || 0).toLocaleString("es-ES") }))))),
+        el("td", { className: "num", textContent: Math.round(Number(c.deaths) || 0).toLocaleString("es-ES") })))))),
     el("p", { className: "meta", textContent: `Última subida ${ago(s.updated)}` }),
   );
 }
@@ -318,6 +426,27 @@ document.querySelectorAll(".tabs button").forEach((b) => b.addEventListener("cli
   document.querySelectorAll(".tabs button").forEach((x) => x.setAttribute("aria-pressed", x === b));
   render();
 }));
+
+// --- tooltip -----------------------------------------------------------------
+const tip = el("div", { className: "tip", hidden: true, role: "tooltip" });
+document.body.append(tip);
+let tipTarget = null;
+function moveTip(ev) {
+  const t = ev.target.closest?.("[data-tip]") || null;
+  if (t !== tipTarget) {
+    tipTarget = t;
+    tip.hidden = !t;
+    if (t) tip.replaceChildren(el("b", { textContent: t.getAttribute("data-tip-title") }), el("span", { textContent: t.getAttribute("data-tip") }));
+  }
+  if (!t) return;
+  const gap = 14;
+  const x = Math.min(ev.clientX + gap, innerWidth - tip.offsetWidth - 4);
+  const y = ev.clientY - tip.offsetHeight - gap;
+  tip.style.left = `${Math.max(4, x)}px`;
+  tip.style.top = `${y < 4 ? ev.clientY + gap : y}px`;
+}
+document.addEventListener("pointermove", moveTip);
+document.addEventListener("pointerdown", moveTip); // en táctil, un toque muestra el tooltip
 
 load();
 setInterval(load, 120000);
