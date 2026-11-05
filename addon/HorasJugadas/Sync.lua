@@ -162,7 +162,9 @@ function HJ:HandleMessage(text, reply)
 
     if kind == "C" then
         local key, played = f[3], tonumber(f[4])
-        if key and key ~= "" and played then
+        -- Los clientes anteriores a 1.1.1 envían a veces un duplicado con el
+        -- reino con espacios: se ignora para no pisar al personaje correcto.
+        if key and key ~= "" and played and not self:IsDuplicateCharKey(key) then
             local p = self:GetPlayer(nick, true)
             local previous = p.chars[key]
             p.chars[key] = {

@@ -315,6 +315,8 @@ function buildPayloads(files) {
             }
         }
         for (const [key, c] of Object.entries(me.chars || {})) {
+            // Duplicado de addons anteriores a 1.1.1 (reino con espacios): no se sube.
+            if (/\s/.test(key)) continue;
             const prev = agg.chars.get(key);
             if (!prev || (c.last || 0) > (prev.last || 0)) agg.chars.set(key, c);
         }

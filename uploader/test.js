@@ -38,6 +38,11 @@ try {
     fs.writeFileSync(file, 'HorasJugadasDB = { nick = "Ana", players = { ["Ana"] = { days = {}, chars = { ["Luna-Reino"] = { played = 7200, deaths = 7, class = "MAGE", level = 80, last = 123 } } } } }');
     const payload = buildPayloads([file])[0];
     assert.equal(payload.p_chars[0].deaths, 7);
+
+    // Los duplicados con el reino con espacios (addon anterior a 1.1.1) no se suben.
+    fs.writeFileSync(file, 'HorasJugadasDB = { nick = "Ana", players = { ["Ana"] = { days = {}, chars = { ["Luna-ReinoDos"] = { played = 7200, class = "MAGE", level = 80, last = 123 }, ["Luna-Reino Dos"] = { played = 56, last = 124 } } } } }');
+    const deduped = buildPayloads([file])[0];
+    assert.deepEqual(deduped.p_chars.map((c) => c.char_key), ['Luna-ReinoDos']);
 } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
 }
