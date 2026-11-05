@@ -2,7 +2,7 @@
 ## Title: Horas Jugadas
 ## Notes: Registra horas y muertes de cada jugador y compártelas con tus amigos.
 ## Author: Enric
-## Version: 1.1.0
+## Version: 1.1.1
 ## SavedVariables: HorasJugadasDB
 ## IconTexture: Interface\Icons\INV_Misc_PocketWatch_01
 

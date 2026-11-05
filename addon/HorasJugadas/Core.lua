@@ -7,7 +7,7 @@ local HJ = CreateFrame("Frame")
 ns.HJ = HJ
 HorasJugadas = HJ
 
-HJ.VERSION = (C_AddOns and C_AddOns.GetAddOnMetadata(ADDON_NAME, "Version")) or "1.1.0"
+HJ.VERSION = (C_AddOns and C_AddOns.GetAddOnMetadata(ADDON_NAME, "Version")) or "1.1.1"
 HJ.TICK_SECONDS = 60     -- cada cuánto se suma tiempo
 HJ.KEEP_DAYS = 120       -- días de historial que se guardan
 HJ.DEATH_STAT_ID = 60    -- estadística de WoW: "Total deaths"
@@ -46,10 +46,41 @@ function HJ:FormatStat(mode, value)
     return self:FormatTime(value)
 end
 
+-- Clave "Pj-Reino" del personaje actual, con el reino sin espacios ni guiones.
+-- Se calcula una vez y se reutiliza: al cerrar sesión o hacer /reload,
+-- GetNormalizedRealmName() puede devolver nil y GetRealmName() trae espacios,
+-- lo que creaba un personaje duplicado ("Pj-Reino con espacios") en cada salida.
 function HJ:CharKey()
+    if self.charKey then return self.charKey end
     local name = UnitName("player")
-    local realm = GetNormalizedRealmName() or GetRealmName() or ""
-    return name .. "-" .. realm
+    local normalized = GetNormalizedRealmName()
+    local realm = normalized or (GetRealmName() or ""):gsub("[%s%-]", "")
+    local key = name .. "-" .. realm
+    if normalized then self.charKey = key end
+    return key
+end
+
+-- Las versiones anteriores guardaban (y enviaban) a veces el reino con espacios.
+function HJ:IsDuplicateCharKey(key)
+    return key:find("%s") ~= nil
+end
+
+-- Quita los personajes duplicados de versiones anteriores, de todos los jugadores.
+-- Del propio personaje se conservan las muertes, por si alguna se apuntó ahí;
+-- el /played real se vuelve a pedir al entrar.
+function HJ:RemoveDuplicateChars()
+    local mine = self:GetMyChar()
+    local myDuplicate = UnitName("player") .. "-" .. (GetRealmName() or "")
+    for _, p in pairs(self.db.players) do
+        for key, c in pairs(p.chars) do
+            if self:IsDuplicateCharKey(key) then
+                if p == self:GetMe() and key == myDuplicate then
+                    mine.deaths = max(mine.deaths or 0, c.deaths or 0)
+                end
+                p.chars[key] = nil
+            end
+        end
+    end
 end
 
 function HJ:CleanNick(n)
@@ -279,6 +310,7 @@ HJ:SetScript("OnEvent", function(self, event, ...)
     if event == "PLAYER_LOGIN" then
         self:InitDB()
         self:UpdateCharInfo()
+        self:RemoveDuplicateChars()
         self:Prune()
         self.lastTick = GetTime()
         -- Evita contar de nuevo una muerte si se carga o recarga estando muerto.

@@ -260,16 +260,19 @@ function registryInstallPath() {
 
 function wowCandidates(cfg) {
     const list = [];
-    const add = (p) => { list.push(p, path.join(p, '_retail_')); };
+    // WoW Forever se instala en su propia carpeta, junto a _retail_.
+    const add = (p) => { list.push(p, path.join(p, '_retail_'), path.join(p, '_forever_')); };
     if (cfg.wowPath) add(cfg.wowPath);
     registryInstallPath().forEach(add);
     if (process.platform === 'win32') {
         const dirs = ['Program Files (x86)\\World of Warcraft', 'Program Files\\World of Warcraft',
             'World of Warcraft', 'Games\\World of Warcraft', 'Juegos\\World of Warcraft',
             'Battle.net\\World of Warcraft', 'Blizzard\\World of Warcraft'];
-        for (const d of 'CDEFGH') for (const p of dirs) list.push(`${d}:\\${p}\\_retail_`);
+        for (const d of 'CDEFGH') {
+            for (const p of dirs) list.push(`${d}:\\${p}\\_retail_`, `${d}:\\${p}\\_forever_`);
+        }
     } else if (process.platform === 'darwin') {
-        list.push('/Applications/World of Warcraft/_retail_');
+        list.push('/Applications/World of Warcraft/_retail_', '/Applications/World of Warcraft/_forever_');
     }
     return list;
 }
@@ -315,6 +318,8 @@ function buildPayloads(files) {
             }
         }
         for (const [key, c] of Object.entries(me.chars || {})) {
+            // Duplicado de addons anteriores a 1.1.1 (reino con espacios): no se sube.
+            if (/\s/.test(key)) continue;
             const prev = agg.chars.get(key);
             if (!prev || (c.last || 0) > (prev.last || 0)) agg.chars.set(key, c);
         }
