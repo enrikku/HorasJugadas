@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="HorasJugadas.Tests/HorasJugadas.Tests.csproj" />
+  <Project Path="HorasJugadas/HorasJugadas.csproj" />
+</Solution>

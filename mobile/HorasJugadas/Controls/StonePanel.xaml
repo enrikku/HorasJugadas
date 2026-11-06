@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:c="clr-namespace:HorasJugadas.Controls"
+             x:Class="HorasJugadas.Controls.StonePanel"
+             Margin="0,0,0,26">
+    <ContentView.Resources>
+        <RadialGradientBrush x:Key="Rivet" Center="0.4,0.35" Radius="0.7">
+            <GradientStop Color="#E9D48A" Offset="0" />
+            <GradientStop Color="#A5832A" Offset="0.55" />
+            <GradientStop Color="#3D2F0C" Offset="1" />
+        </RadialGradientBrush>
+    </ContentView.Resources>
+    <ContentView.ControlTemplate>
+        <ControlTemplate x:DataType="c:StonePanel">
+            <Grid>
+                <!-- Marco de piedra biselado -->
+                <Border Margin="6,18,6,6" Padding="12,28,12,14" StrokeThickness="4" StrokeShape="RoundRectangle 7">
+                    <Border.Stroke>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                            <GradientStop Color="#8F897C" Offset="0" />
+                            <GradientStop Color="#57524A" Offset="0.35" />
+                            <GradientStop Color="#2B2822" Offset="0.7" />
+                        </LinearGradientBrush>
+                    </Border.Stroke>
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                            <GradientStop Color="#211B13" Offset="0" />
+                            <GradientStop Color="#18140E" Offset="0.3" />
+                        </LinearGradientBrush>
+                    </Border.Background>
+                    <ContentPresenter />
+                </Border>
+
+                <!-- Remaches -->
+                <Ellipse WidthRequest="13" HeightRequest="13" Fill="{StaticResource Rivet}" HorizontalOptions="Start" VerticalOptions="Start" Margin="0,12,0,0" />
+                <Ellipse WidthRequest="13" HeightRequest="13" Fill="{StaticResource Rivet}" HorizontalOptions="End" VerticalOptions="Start" Margin="0,12,0,0" />
+                <Ellipse WidthRequest="13" HeightRequest="13" Fill="{StaticResource Rivet}" HorizontalOptions="Start" VerticalOptions="End" />
+                <Ellipse WidthRequest="13" HeightRequest="13" Fill="{StaticResource Rivet}" HorizontalOptions="End" VerticalOptions="End" />
+
+                <!-- Placa del título -->
+                <Border HorizontalOptions="Center" VerticalOptions="Start" Padding="22,5" StrokeThickness="2" StrokeShape="RoundRectangle 4" InputTransparent="True">
+                    <Border.Stroke>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                            <GradientStop Color="#D9B73F" Offset="0" />
+                            <GradientStop Color="#6B5212" Offset="1" />
+                        </LinearGradientBrush>
+                    </Border.Stroke>
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                            <GradientStop Color="#3B342A" Offset="0" />
+                            <GradientStop Color="#1C1812" Offset="1" />
+                        </LinearGradientBrush>
+                    </Border.Background>
+                    <Label Text="{TemplateBinding Title}" FontFamily="CinzelSemi" FontSize="15" CharacterSpacing="0.6"
+                           TextColor="{StaticResource Gold}" HorizontalTextAlignment="Center" />
+                </Border>
+            </Grid>
+        </ControlTemplate>
+    </ContentView.ControlTemplate>
+</ContentView>

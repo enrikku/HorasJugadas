@@ -4,6 +4,8 @@ Sistema para que un grupo de amigos sepa **cuántas horas juega y cuántas veces
 
 🌐 **Web:** <https://horas-jugadas.vercel.app>
 
+📱 **App para iOS y Android:** ver [`mobile/`](mobile/README.md).
+
 Tiene tres piezas que trabajan juntas:
 
 | Pieza | Qué es | Dónde se ejecuta |

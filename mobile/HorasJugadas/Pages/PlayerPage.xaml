@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:c="clr-namespace:HorasJugadas.Controls"
+             xmlns:vm="clr-namespace:HorasJugadas.ViewModels"
+             x:Class="HorasJugadas.Pages.PlayerPage"
+             x:DataType="vm:PlayerViewModel"
+             NavigationPage.HasNavigationBar="False"
+             SafeAreaEdges="Container"
+             BackgroundColor="{StaticResource Bg}">
+
+    <Grid x:Name="Root">
+        <ScrollView Scrolled="OnScrolled">
+            <VerticalStackLayout Padding="16,16,16,32" MaximumWidthRequest="720">
+                <c:StonePanel Title="Ficha de jugador">
+                    <VerticalStackLayout>
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <Label Text="{Binding Nick}" TextColor="{Binding Color}" FontFamily="CinzelBold" FontSize="24" VerticalTextAlignment="Center" />
+                            <Button Grid.Column="1" Text="Cerrar" Clicked="OnCloseClicked" FontFamily="AlegreyaBold" FontSize="14" Padding="18,0"
+                                    MinimumHeightRequest="44" TextColor="{StaticResource Gold}" BorderColor="#A98A26" BorderWidth="2" CornerRadius="4">
+                                <Button.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#A81A14" Offset="0" />
+                                        <GradientStop Color="#5E0D09" Offset="1" />
+                                    </LinearGradientBrush>
+                                </Button.Background>
+                            </Button>
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="8" Margin="0,16,0,22">
+                            <c:StatCell Label="Hoy" Value="{Binding Today}" />
+                            <c:StatCell Grid.Column="1" Label="7 días" Value="{Binding Week}" />
+                            <c:StatCell Grid.Row="1" Label="30 días" Value="{Binding Month}" />
+                            <c:StatCell Grid.Row="1" Grid.Column="1" Label="Total /played" Value="{Binding Total}" />
+                            <c:StatCell Grid.Row="2" Grid.ColumnSpan="2" Label="Muertes" Value="{Binding Deaths}" />
+                        </Grid>
+
+                        <GraphicsView x:Name="ChartView">
+                            <GraphicsView.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnChartTapped" />
+                            </GraphicsView.GestureRecognizers>
+                        </GraphicsView>
+
+                        <VerticalStackLayout Margin="0,10,0,0" BindableLayout.ItemsSource="{Binding Chars}">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="vm:CharRow">
+                                    <VerticalStackLayout>
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" Padding="0,8">
+                                            <VerticalStackLayout>
+                                                <Label Text="{Binding Name}" TextColor="{Binding Color}" FontFamily="AlegreyaBold" FontSize="15" LineBreakMode="TailTruncation" />
+                                                <Label Text="{Binding Info}" Style="{StaticResource Muted14}" LineBreakMode="TailTruncation" />
+                                            </VerticalStackLayout>
+                                            <VerticalStackLayout Grid.Column="1">
+                                                <Label Text="{Binding Played}" FontFamily="AlegreyaMedium" FontSize="15" HorizontalTextAlignment="End" />
+                                                <Label Text="{Binding Deaths}" Style="{StaticResource Muted14}" HorizontalTextAlignment="End" />
+                                            </VerticalStackLayout>
+                                        </Grid>
+                                        <BoxView HeightRequest="1" Color="{StaticResource Line}" />
+                                    </VerticalStackLayout>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </VerticalStackLayout>
+
+                        <Label Text="{Binding Updated}" Style="{StaticResource Muted14}" Margin="0,14,0,0" />
+                    </VerticalStackLayout>
+                </c:StonePanel>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <c:TipOverlay x:Name="Tip" />
+    </Grid>
+</ContentPage>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                    x:Class="HorasJugadas.Resources.Styles.Theme">
+
+    <!-- Misma paleta que web/index.html -->
+    <Color x:Key="Bg">#0A0907</Color>
+    <Color x:Key="PanelColor">#18140E</Color>
+    <Color x:Key="Inset">#0C0A07</Color>
+    <Color x:Key="StoneHi">#8F897C</Color>
+    <Color x:Key="Stone">#57524A</Color>
+    <Color x:Key="StoneLo">#2B2822</Color>
+    <Color x:Key="Line">#2F2A21</Color>
+    <Color x:Key="TextColor">#F3ECD9</Color>
+    <Color x:Key="Muted">#AEA48D</Color>
+    <Color x:Key="Gold">#FFD100</Color>
+    <Color x:Key="GoldDim">#C9A227</Color>
+    <Color x:Key="ErrorColor">#FF6A5E</Color>
+    <Color x:Key="SunkenEdge">#3B362C</Color>
+
+    <Style TargetType="Label">
+        <Setter Property="FontFamily" Value="AlegreyaRegular" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="TextColor" Value="{StaticResource TextColor}" />
+    </Style>
+
+    <Style x:Key="Muted14" TargetType="Label">
+        <Setter Property="FontFamily" Value="AlegreyaRegular" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="TextColor" Value="{StaticResource Muted}" />
+    </Style>
+
+    <Style x:Key="Sunken" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="{StaticResource Inset}" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 3" />
+        <Setter Property="Stroke" Value="{StaticResource SunkenEdge}" />
+    </Style>
+
+</ResourceDictionary>

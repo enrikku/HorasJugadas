@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:c="clr-namespace:HorasJugadas.Controls"
+             xmlns:core="clr-namespace:HorasJugadas.Core"
+             xmlns:vm="clr-namespace:HorasJugadas.ViewModels"
+             x:Class="HorasJugadas.Pages.MainPage"
+             x:DataType="vm:MainViewModel"
+             NavigationPage.HasNavigationBar="False"
+             SafeAreaEdges="Container"
+             BackgroundColor="{StaticResource Bg}">
+
+    <Grid x:Name="Root">
+        <RefreshView IsRefreshing="{Binding IsRefreshing}" Command="{Binding RefreshCommand}"
+                     RefreshColor="{StaticResource GoldDim}">
+            <ScrollView x:Name="MainScroll" Scrolled="OnScrolled">
+                <VerticalStackLayout Padding="16,16,16,32" MaximumWidthRequest="720">
+
+                    <Grid ColumnDefinitions="60,*" ColumnSpacing="14" Margin="0,0,0,20">
+                        <Image Source="crest.png" WidthRequest="60" HeightRequest="60" />
+                        <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+                            <Label Text="Horas Jugadas" FontFamily="CinzelBold" FontSize="26" TextColor="{StaticResource Gold}" />
+                            <Label Text="{Binding Meta}" Style="{StaticResource Muted14}" />
+                        </VerticalStackLayout>
+                    </Grid>
+
+                    <Label Text="Sin conexión: mostrando los últimos datos cargados."
+                           IsVisible="{Binding ShowOfflineBanner}" TextColor="{StaticResource ErrorColor}"
+                           HorizontalTextAlignment="Center" Margin="0,0,0,12" />
+
+                    <c:StonePanel Title="Ranking">
+                        <VerticalStackLayout Spacing="12">
+                            <ActivityIndicator IsVisible="{Binding IsLoading}" IsRunning="{Binding IsLoading}"
+                                               Color="{StaticResource Gold}" Margin="24" />
+
+                            <VerticalStackLayout IsVisible="{Binding HasFatalError}" Spacing="14" Padding="12">
+                                <Label Text="{Binding FatalError}" FontSize="16" TextColor="{StaticResource ErrorColor}" HorizontalTextAlignment="Center" />
+                                <Button Text="Reintentar" Command="{Binding RetryCommand}" FontFamily="AlegreyaBold" FontSize="15"
+                                        HorizontalOptions="Center" MinimumHeightRequest="44" TextColor="{StaticResource Gold}"
+                                        BackgroundColor="Transparent" BorderColor="{StaticResource GoldDim}" BorderWidth="2" CornerRadius="4" />
+                            </VerticalStackLayout>
+
+                            <Grid x:Name="Tabs" IsVisible="{Binding HasData}" RowDefinitions="42,42" RowSpacing="3"
+                                  ColumnDefinitions="3*,3*,3*,5*" ColumnSpacing="3">
+                                <Button Grid.Column="0" Clicked="OnTabClicked" />
+                                <Button Grid.Column="1" Clicked="OnTabClicked" />
+                                <Button Grid.Column="2" Clicked="OnTabClicked" />
+                                <Button Grid.Column="3" Clicked="OnTabClicked" />
+                                <Button Grid.Row="1" Grid.ColumnSpan="4" Clicked="OnTabClicked" />
+                            </Grid>
+
+                            <Label Text="Todavía nadie ha subido datos." IsVisible="{Binding IsEmpty}" FontSize="16"
+                                   TextColor="{StaticResource Muted}" HorizontalTextAlignment="Center" Padding="24" />
+
+                            <VerticalStackLayout Spacing="4" BindableLayout.ItemsSource="{Binding Rows}">
+                                <BindableLayout.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:RankRow">
+                                        <Border StrokeThickness="1" Stroke="#000000" StrokeShape="RoundRectangle 3"
+                                                BackgroundColor="{StaticResource Inset}"
+                                                SemanticProperties.Description="{Binding Description}">
+                                            <Border.GestureRecognizers>
+                                                <TapGestureRecognizer Tapped="OnRowTapped" />
+                                            </Border.GestureRecognizers>
+                                            <Grid HeightRequest="44">
+                                                <Grid InputTransparent="True">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="{Binding BarWidth}" />
+                                                        <ColumnDefinition Width="{Binding BarRest}" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <BoxView Color="{Binding Color}" Opacity="0.26" />
+                                                </Grid>
+                                                <Grid ColumnDefinitions="24,*,Auto" ColumnSpacing="10" Padding="8,0,12,0" InputTransparent="True" CascadeInputTransparent="True">
+                                                    <Grid WidthRequest="24" HeightRequest="24" VerticalOptions="Center">
+                                                        <Ellipse IsVisible="{Binding HasMedal}" Fill="{Binding MedalBrush}" Stroke="#000000" StrokeThickness="1" />
+                                                        <Label Text="{Binding Position}" FontFamily="AlegreyaBold" TextColor="{Binding PositionColor}"
+                                                               HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                                                    </Grid>
+                                                    <Label Grid.Column="1" Text="{Binding Nick}" FontFamily="AlegreyaBold" FontSize="17" TextColor="{Binding Color}"
+                                                           VerticalTextAlignment="Center" LineBreakMode="TailTruncation" />
+                                                    <Label Grid.Column="2" Text="{Binding Value}" FontFamily="AlegreyaMedium" FontSize="16" VerticalTextAlignment="Center" />
+                                                </Grid>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </BindableLayout.ItemTemplate>
+                            </VerticalStackLayout>
+                        </VerticalStackLayout>
+                    </c:StonePanel>
+
+                    <c:StonePanel Title="Actividad · últimos 30 días" IsVisible="{Binding HasData}">
+                        <Grid ColumnDefinitions="92,*">
+                            <VerticalStackLayout Padding="0,21,6,0" Spacing="3" BindableLayout.ItemsSource="{Binding HeatRows}">
+                                <BindableLayout.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:HeatRow">
+                                        <Label Text="{Binding Nick}" TextColor="{Binding Color}" FontFamily="AlegreyaBold" HeightRequest="20"
+                                               VerticalTextAlignment="Center" LineBreakMode="TailTruncation" />
+                                    </DataTemplate>
+                                </BindableLayout.ItemTemplate>
+                            </VerticalStackLayout>
+                            <ScrollView x:Name="HeatScroll" Grid.Column="1" Orientation="Horizontal"
+                                        HorizontalScrollBarVisibility="Never" Scrolled="OnScrolled" SizeChanged="OnHeatScrollSizeChanged">
+                                <GraphicsView x:Name="HeatView">
+                                    <GraphicsView.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnHeatTapped" />
+                                    </GraphicsView.GestureRecognizers>
+                                </GraphicsView>
+                            </ScrollView>
+                        </Grid>
+                    </c:StonePanel>
+                </VerticalStackLayout>
+            </ScrollView>
+        </RefreshView>
+
+        <c:TipOverlay x:Name="Tip" />
+    </Grid>
+</ContentPage>
